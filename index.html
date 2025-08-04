@@ -21,6 +21,31 @@
   <p>Scratch below!</p>
 
   <div id="scratch-container"></div>
+<script>
+  const message = /* your winner or try again message */;
+  const sc = new ScratchCard('#scratch-container', {
+    scratchType: SCRATCH_TYPE.CIRCLE,
+    containerWidth: 300,
+    containerHeight: 150,
+    imageForwardSrc: '', 
+    htmlBackground: `<div style="
+      width:300px;
+      height:150px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      font-weight:bold;
+      background:white;
+    ">${message}</div>`,
+    clearZoneRadius: 30,
+    percentToFinish: 50,
+    callback: () => {}
+  });
+  sc.init().then(() => {
+    sc.canvas.style.backgroundColor = '#bbb';
+  });
+</script>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
