@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Scratch Code</title>
- <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.1.0/dist/scratchcard.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.1.0/dist/scratchcard.min.js"></script>
   <style>
     body { font-family: Arial; text-align: center; padding: 40px; }
     #scratch-container {
@@ -37,7 +37,7 @@
       scratchType: SCRATCH_TYPE.CIRCLE,
       containerWidth: 300,
       containerHeight: 150,
-      imageForwardSrc: '', // leave empty so it's gray
+      imageForwardSrc: '', // gray overlay
       htmlBackground: document.getElementById('scratch-text'),
       clearZoneRadius: 25,
       nPoints: 30,
@@ -45,7 +45,7 @@
     });
 
     sc.init().then(() => {
-      sc.canvas.style.backgroundColor = '#bbb'; // gray overlay
+      sc.canvas.style.backgroundColor = '#bbb';
       sc.canvas.style.zIndex = 2;
       sc.onScratchComplete(() => {
         alert('Done scratching! 🎉');
