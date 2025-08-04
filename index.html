@@ -1,30 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Scratch it and win</title>
+  <title>Scratch Code</title>
+  <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.1.0/dist/scratchcard.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-      background: #f9f9f9;
-    }
-    #container {
-      position: relative;
+    body { font-family: Arial; text-align: center; padding: 40px; }
+    #scratch-container {
       width: 300px;
-      height: 100px;
-      margin: 30px auto;
-      border: 2px solid #ccc;
+      height: 150px;
+      margin: 20px auto;
+      position: relative;
     }
-    canvas {
+    #scratch-text {
       position: absolute;
-      top: 0;
-      left: 0;
-    }
-    #message {
-      margin-top: 30px;
-      font-size: 22px;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      background: white;
+      z-index: 1;
     }
   </style>
 </head>
@@ -32,78 +28,29 @@
   <h1>Scratch code</h1>
   <p>Scratch below!</p>
 
-  <div id="container">
-    <div id="result" style="line-height: 100px; font-size: 22px;">Raspando...</div>
-    <canvas width="300" height="100"></canvas>
+  <div id="scratch-container">
+    <div id="scratch-text">🎁 You WON!</div>
   </div>
 
-  <div id="message"></div>
-
   <script>
-    const backendUrl = "https://script.google.com/a/macros/ancient.gg/s/AKfycbw4uM4iPwNsDjJ0WhDOO-K54hd4cRvA3pXDccYtSx0CuZAqFPkFBw8O3u81GKXKncEutg/exec";
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-
-    const canvas = document.querySelector("canvas");
-    const ctx = canvas.getContext("2d");
-    const container = document.getElementById("container");
-    const resultBox = document.getElementById("result");
-    const message = document.getElementById("message");
-
-    let isScratched = false;
-
-    ctx.fillStyle = "#ccc";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = "destination-out";
-
-    function checkScratchPercentage() {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let pixels = imageData.data;
-      let cleared = 0;
-      for (let i = 3; i < pixels.length; i += 4) {
-        if (pixels[i] === 0) cleared++;
-      }
-      return cleared / (pixels.length / 4);
-    }
-
-    canvas.addEventListener("mousemove", function (e) {
-      if (isScratched) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (checkScratchPercentage() > 0.5) {
-        revealResult();
-        isScratched = true;
-      }
+    const sc = new ScratchCard('#scratch-container', {
+      scratchType: SCRATCH_TYPE.CIRCLE,
+      containerWidth: 300,
+      containerHeight: 150,
+      imageForwardSrc: '', // leave empty so it's gray
+      htmlBackground: document.getElementById('scratch-text'),
+      clearZoneRadius: 25,
+      nPoints: 30,
+      pointSize: 4,
     });
 
-    function revealResult() {
-      if (!code) {
-        resultBox.textContent = "Invalid code.";
-        return;
-      }
-
-      fetch(`${backendUrl}?code=${code}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            resultBox.textContent = data.winner ? "You won!" : "Try again :(";
-            message.textContent = data.message;
-          } else {
-            resultBox.textContent = "Code already used.";
-            message.textContent = data.message;
-          }
-        })
-        .catch(() => {
-          resultBox.textContent = "Error trying to verify the code";
-        });
-    }
+    sc.init().then(() => {
+      sc.canvas.style.backgroundColor = '#bbb'; // gray overlay
+      sc.canvas.style.zIndex = 2;
+      sc.onScratchComplete(() => {
+        alert('Done scratching! 🎉');
+      });
+    });
   </script>
 </body>
 </html>
