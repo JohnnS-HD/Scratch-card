@@ -1,8 +1,109 @@
 <!DOCTYPE html>
-<html>
-  <head><title>Scratch Test</title></head>
-  <body>
-    <h1>GitHub Pages Test</h1>
-    <p>If you're seeing this, it's working! 🎉</p>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scratch it and win</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+      background: #f9f9f9;
+    }
+    #container {
+      position: relative;
+      width: 300px;
+      height: 100px;
+      margin: 30px auto;
+      border: 2px solid #ccc;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #message {
+      margin-top: 30px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scratch code</h1>
+  <p>Scratch below!</p>
+
+  <div id="container">
+    <div id="result" style="line-height: 100px; font-size: 22px;">Raspando...</div>
+    <canvas width="300" height="100"></canvas>
+  </div>
+
+  <div id="message"></div>
+
+  <script>
+    const backendUrl = "https://script.google.com/a/macros/ancient.gg/s/AKfycbw4uM4iPwNsDjJ0WhDOO-K54hd4cRvA3pXDccYtSx0CuZAqFPkFBw8O3u81GKXKncEutg/exec";
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    const canvas = document.querySelector("canvas");
+    const ctx = canvas.getContext("2d");
+    const container = document.getElementById("container");
+    const resultBox = document.getElementById("result");
+    const message = document.getElementById("message");
+
+    let isScratched = false;
+
+    ctx.fillStyle = "#ccc";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = "destination-out";
+
+    function checkScratchPercentage() {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let pixels = imageData.data;
+      let cleared = 0;
+      for (let i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] === 0) cleared++;
+      }
+      return cleared / (pixels.length / 4);
+    }
+
+    canvas.addEventListener("mousemove", function (e) {
+      if (isScratched) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (checkScratchPercentage() > 0.5) {
+        revealResult();
+        isScratched = true;
+      }
+    });
+
+    function revealResult() {
+      if (!code) {
+        resultBox.textContent = "Invalid code.";
+        return;
+      }
+
+      fetch(`${backendUrl}?code=${code}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            resultBox.textContent = data.winner ? "You won!" : "Try again :(";
+            message.textContent = data.message;
+          } else {
+            resultBox.textContent = "Code already used.";
+            message.textContent = data.message;
+          }
+        })
+        .catch(() => {
+          resultBox.textContent = "Error trying to verify the code";
+        });
+    }
+  </script>
+</body>
 </html>
