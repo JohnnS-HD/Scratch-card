@@ -13,18 +13,6 @@
       width: 300px;
       height: 150px;
       margin: 20px auto;
-      position: relative;
-    }
-    #scratch-text {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: bold;
-      background: white;
-      z-index: 1;
     }
   </style>
 </head>
@@ -32,43 +20,57 @@
   <h1>Scratch code</h1>
   <p>Scratch below!</p>
 
-  <div id="scratch-container">
-    <div id="scratch-text">Loading...</div>
-  </div>
+  <div id="scratch-container"></div>
 
   <script>
-    // Step 1: Get code from URL
+    // Get code from URL
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    // Step 2: Define list of winning codes
-    const winners = ['WIN123', 'ABC999', 'HYPE456']; // <- update with your own
+    // List of winning codes
+    const winners = ['WIN123', 'ABC999', 'HYPE456']; // Replace with your actual list
 
-    // Step 3: Show the message based on win/loss
-    const scratchText = document.getElementById('scratch-text');
+    // Define message to show under scratch layer
+    let message = '';
     if (!code) {
-      scratchText.innerHTML = '❗ Invalid link. No code found.';
+      message = '❗ Invalid link.';
     } else if (winners.includes(code)) {
-      scratchText.innerHTML = '🎉 You WON!';
+      message = '🎉 You WON!';
     } else {
-      scratchText.innerHTML = '🙁 Try Again!';
+      message = '🙁 Try Again!';
     }
 
-    // Step 4: Scratchcard logic
+    // Create message element dynamically
+    const messageDiv = document.createElement('div');
+    messageDiv.style.width = '100%';
+    messageDiv.style.height = '100%';
+    messageDiv.style.display = 'flex';
+    messageDiv.style.justifyContent = 'center';
+    messageDiv.style.alignItems = 'center';
+    messageDiv.style.fontSize = '24px';
+    messageDiv.style.fontWeight = 'bold';
+    messageDiv.style.background = 'white';
+    messageDiv.innerText = message;
+
+    // Attach message to body (hidden)
+    document.body.appendChild(messageDiv);
+    messageDiv.style.position = 'absolute';
+    messageDiv.style.left = '-9999px';
+
+    // Initialize scratch card
     const sc = new ScratchCard('#scratch-container', {
       scratchType: SCRATCH_TYPE.CIRCLE,
       containerWidth: 300,
       containerHeight: 150,
       imageForwardSrc: '',
-      htmlBackground: scratchText,
+      htmlBackground: messageDiv,
       clearZoneRadius: 25,
       nPoints: 30,
       pointSize: 4,
     });
 
     sc.init().then(() => {
-      sc.canvas.style.backgroundColor = '#bbb';
-      sc.canvas.style.zIndex = 2;
+      sc.canvas.style.backgroundColor = '#bbb'; // gray overlay
     });
   </script>
 </body>
