@@ -23,14 +23,11 @@
   <div id="scratch-container"></div>
 
   <script>
-    // Get code from URL
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    // List of winning codes
-    const winners = ['WIN123', 'ABC999', 'HYPE456']; // Replace with your actual list
+    const winners = ['WIN123', 'HYPE456', 'PRIZE789']; // Example winner codes
 
-    // Define message to show under scratch layer
     let message = '';
     if (!code) {
       message = '❗ Invalid link.';
@@ -40,7 +37,6 @@
       message = '🙁 Try Again!';
     }
 
-    // Create message element dynamically
     const messageDiv = document.createElement('div');
     messageDiv.style.width = '100%';
     messageDiv.style.height = '100%';
@@ -52,25 +48,24 @@
     messageDiv.style.background = 'white';
     messageDiv.innerText = message;
 
-    // Attach message to body (hidden)
-    document.body.appendChild(messageDiv);
+    // Hide it off-screen for rendering
     messageDiv.style.position = 'absolute';
     messageDiv.style.left = '-9999px';
+    document.body.appendChild(messageDiv);
 
-    // Initialize scratch card
     const sc = new ScratchCard('#scratch-container', {
       scratchType: SCRATCH_TYPE.CIRCLE,
       containerWidth: 300,
       containerHeight: 150,
       imageForwardSrc: '',
       htmlBackground: messageDiv,
-      clearZoneRadius: 25,
+      clearZoneRadius: 30,
       nPoints: 30,
       pointSize: 4,
     });
 
     sc.init().then(() => {
-      sc.canvas.style.backgroundColor = '#bbb'; // gray overlay
+      sc.canvas.style.backgroundColor = '#c0c0c0'; // Scratch overlay color
     });
   </script>
 </body>
