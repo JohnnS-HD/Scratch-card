@@ -4,7 +4,11 @@
   <title>Scratch Code</title>
   <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.1.0/dist/scratchcard.min.js"></script>
   <style>
-    body { font-family: Arial; text-align: center; padding: 40px; }
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 40px;
+    }
     #scratch-container {
       width: 300px;
       height: 150px;
@@ -29,16 +33,34 @@
   <p>Scratch below!</p>
 
   <div id="scratch-container">
-    <div id="scratch-text">🎁 You WON!</div>
+    <div id="scratch-text">Loading...</div>
   </div>
 
   <script>
+    // Step 1: Get code from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    // Step 2: Define list of winning codes
+    const winners = ['WIN123', 'ABC999', 'HYPE456']; // <- update with your own
+
+    // Step 3: Show the message based on win/loss
+    const scratchText = document.getElementById('scratch-text');
+    if (!code) {
+      scratchText.innerHTML = '❗ Invalid link. No code found.';
+    } else if (winners.includes(code)) {
+      scratchText.innerHTML = '🎉 You WON!';
+    } else {
+      scratchText.innerHTML = '🙁 Try Again!';
+    }
+
+    // Step 4: Scratchcard logic
     const sc = new ScratchCard('#scratch-container', {
       scratchType: SCRATCH_TYPE.CIRCLE,
       containerWidth: 300,
       containerHeight: 150,
-      imageForwardSrc: '', // gray overlay
-      htmlBackground: document.getElementById('scratch-text'),
+      imageForwardSrc: '',
+      htmlBackground: scratchText,
       clearZoneRadius: 25,
       nPoints: 30,
       pointSize: 4,
@@ -47,9 +69,6 @@
     sc.init().then(() => {
       sc.canvas.style.backgroundColor = '#bbb';
       sc.canvas.style.zIndex = 2;
-      sc.onScratchComplete(() => {
-        alert('Done scratching! 🎉');
-      });
     });
   </script>
 </body>
