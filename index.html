@@ -2,10 +2,11 @@
 <html>
 <head>
   <title>Scratch Code</title>
+  <meta charset="UTF-8" />
   <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.1.0/dist/scratchcard.min.js"></script>
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       text-align: center;
       padding: 40px;
     }
@@ -17,80 +18,54 @@
   </style>
 </head>
 <body>
-  <h1>Scratch code</h1>
-  <p>Scratch below!</p>
+  <h1>Scratch Your Code</h1>
+  <p>Scratch to reveal your result:</p>
 
   <div id="scratch-container"></div>
-<script>
-  const message = /* your winner or try again message */;
-  const sc = new ScratchCard('#scratch-container', {
-    scratchType: SCRATCH_TYPE.CIRCLE,
-    containerWidth: 300,
-    containerHeight: 150,
-    imageForwardSrc: '', 
-    htmlBackground: `<div style="
-      width:300px;
-      height:150px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:24px;
-      font-weight:bold;
-      background:white;
-    ">${message}</div>`,
-    clearZoneRadius: 30,
-    percentToFinish: 50,
-    callback: () => {}
-  });
-  sc.init().then(() => {
-    sc.canvas.style.backgroundColor = '#bbb';
-  });
-</script>
 
   <script>
+    // Get code from URL
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    const winners = ['WIN123', 'HYPE456', 'PRIZE789']; // Example winner codes
+    // List of winning codes
+    const winners = ['WIN123', 'HYPE456', 'PRIZE789']; // Customize this list
 
+    // Determine message
     let message = '';
     if (!code) {
-      message = '❗ Invalid link.';
+      message = '❗ Invalid or missing code';
     } else if (winners.includes(code)) {
       message = '🎉 You WON!';
     } else {
       message = '🙁 Try Again!';
     }
 
-    const messageDiv = document.createElement('div');
-    messageDiv.style.width = '100%';
-    messageDiv.style.height = '100%';
-    messageDiv.style.display = 'flex';
-    messageDiv.style.justifyContent = 'center';
-    messageDiv.style.alignItems = 'center';
-    messageDiv.style.fontSize = '24px';
-    messageDiv.style.fontWeight = 'bold';
-    messageDiv.style.background = 'white';
-    messageDiv.innerText = message;
-
-    // Hide it off-screen for rendering
-    messageDiv.style.position = 'absolute';
-    messageDiv.style.left = '-9999px';
-    document.body.appendChild(messageDiv);
-
+    // Use htmlBackground with inline HTML content
     const sc = new ScratchCard('#scratch-container', {
       scratchType: SCRATCH_TYPE.CIRCLE,
       containerWidth: 300,
       containerHeight: 150,
-      imageForwardSrc: '',
-      htmlBackground: messageDiv,
+      imageForwardSrc: '', // gray overlay
+      htmlBackground: `
+        <div style="
+          width: 300px;
+          height: 150px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          font-weight: bold;
+          background: white;
+        ">${message}</div>
+      `,
       clearZoneRadius: 30,
       nPoints: 30,
       pointSize: 4,
     });
 
     sc.init().then(() => {
-      sc.canvas.style.backgroundColor = '#c0c0c0'; // Scratch overlay color
+      sc.canvas.style.backgroundColor = '#bbb';
     });
   </script>
 </body>
