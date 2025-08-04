@@ -1,72 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Scratch Code</title>
-  <meta charset="UTF-8" />
-  <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.1.0/dist/scratchcard.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Scratch & Win</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
+      background-color: #0D1321;
+      color: #FFFFFF;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      color: #FFFFFF;
+    }
+
     #scratch-container {
-      width: 300px;
-      height: 150px;
-      margin: 20px auto;
+      background-color: #1B2131;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      text-align: center;
+    }
+
+    canvas {
+      margin-top: 15px;
+      background-color: #777;
+      border-radius: 10px;
+    }
+
+    #message {
+      font-size: 1.5em;
+      margin-top: 25px;
+      color: #E4B300;
+    }
+
+    .branding {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 1.2em;
+      color: #A0A9C0;
     }
   </style>
 </head>
 <body>
-  <h1>Scratch Your Code</h1>
-  <p>Scratch to reveal your result:</p>
 
-  <div id="scratch-container"></div>
+  <div class="branding">HYPEDROP</div>
+
+  <h1>🎁 Scratch to Win</h1>
+
+  <div id="scratch-container">
+    <canvas id="scratchCanvas" width="300" height="100"></canvas>
+    <div id="message">Scratch to see if you’ve won!</div>
+  </div>
 
   <script>
-    // Get code from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
+    const canvas = document.getElementById('scratchCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#999';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // List of winning codes
-    const winners = ['WIN123', 'HYPE456', 'PRIZE789']; // Customize this list
+    let drawing = false;
+    canvas.addEventListener('mousedown', () => drawing = true);
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mousemove', e => {
+      if (!drawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(e.clientX - rect.left, e.clientY - rect.top, 30, 30);
+    });
 
-    // Determine message
-    let message = '';
+    const code = new URLSearchParams(window.location.search).get("code");
+    const winningCodes = ["WIN123", "PRIZE456", "GOLD789"]; // Replace with real values
+    const message = document.getElementById("message");
+
     if (!code) {
-      message = '❗ Invalid or missing code';
-    } else if (winners.includes(code)) {
-      message = '🎉 You WON!';
+      message.textContent = "Invalid code!";
+    } else if (winningCodes.includes(code)) {
+      message.textContent = "🎉 You WON!";
     } else {
-      message = '🙁 Try Again!';
+      message.textContent = "😢 Sorry, not this time.";
     }
-
-    // Use htmlBackground with inline HTML content
-    const sc = new ScratchCard('#scratch-container', {
-      scratchType: SCRATCH_TYPE.CIRCLE,
-      containerWidth: 300,
-      containerHeight: 150,
-      imageForwardSrc: '', // gray overlay
-      htmlBackground: `
-        <div style="
-          width: 300px;
-          height: 150px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-          font-weight: bold;
-          background: white;
-        ">${message}</div>
-      `,
-      clearZoneRadius: 30,
-      nPoints: 30,
-      pointSize: 4,
-    });
-
-    sc.init().then(() => {
-      sc.canvas.style.backgroundColor = '#bbb';
-    });
   </script>
+
 </body>
 </html>
