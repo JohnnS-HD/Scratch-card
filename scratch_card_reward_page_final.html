@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scratch to Win</title>
+  <style>
+    body {
+      background-color: #192036;
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .logo {
+      margin-top: 30px;
+    }
+    .logo img {
+      width: 250px;
+    }
+    .container {
+      background-color: #1f2643;
+      padding: 40px 30px;
+      margin: 40px auto;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    #scratch-container {
+      position: relative;
+      width: 100%;
+      height: 150px;
+      margin-bottom: 20px;
+    }
+    #scratch-message {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      z-index: 0;
+      pointer-events: none;
+    }
+    #scratch-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      border-radius: 8px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .buttons a {
+      background-color: #494f66;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <img src="https://johnns-hd.github.io/Scratch-card/assets/Logo-Full-White.png" alt="HypeDrop Logo" />
+  </div>
+  <div class="container">
+    <h2>Scratch to reveal your reward</h2>
+    <div id="scratch-container">
+      <div id="scratch-message">Loading...</div>
+      <canvas id="scratch-canvas" width="400" height="150"></canvas>
+    </div>
+    <div class="buttons">
+      <a href="https://www.hypedrop.com/na/rewards" target="_blank">Go to Rewards Page</a>
+      <a href="https://www.hypedrop.com/support" target="_blank">Support</a>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scratch-canvas');
+    const ctx = canvas.getContext('2d');
+    const resultMessage = document.getElementById('scratch-message');
+    const code = new URLSearchParams(window.location.search).get('code');
+
+    if (!code) {
+      resultMessage.textContent = '❌ No code provided.';
+    } else {
+      fetch('https://script.google.com/macros/s/AKfycbyprkRAYbNKdZ5HTuhBje40S5JtvKld9iOKdCqwgLKTyTObOLNRmSTuk_GjuqXCVVjW/exec?code=' + code)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'valid') {
+            resultMessage.textContent = data.isWinner ? '🎉 You WON! Use your reward on HypeDrop!' : '🙁 Better luck next time!';
+          } else {
+            resultMessage.textContent = '❌ Invalid or redeemed code.';
+          }
+        })
+        .catch(() => {
+          resultMessage.textContent = '⚠️ Error validating code.';
+        });
+    }
+
+    ctx.fillStyle = '#999';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'destination-out';
+
+    let isDrawing = false;
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseleave', () => isDrawing = false);
+    canvas.addEventListener('mousemove', function(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  </script>
+</body>
+</html>
