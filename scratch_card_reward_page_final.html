@@ -100,7 +100,8 @@
     if (!code) {
       resultMessage.textContent = '❌ No code provided.';
     } else {
-      fetch('https://script.google.com/macros/s/AKfycbyprkRAYbNKdZ5HTuhBje40S5JtvKld9iOKdCqwgLKTyTObOLNRmSTuk_GjuqXCVVjW/exec?code=' + code)
+      fetch('https://script.google.com/a/macros/ancient.gg/s/AKfycbw4uM4iPwNsDjJ0WhDOO-K54hd4cRvA3pXDccYtSx0CuZAqFPkFBw8O3u81GKXKncEutg/exec?code=' + code)
+        
         .then(res => res.json())
         .then(data => {
           if (data.status === 'valid') {
