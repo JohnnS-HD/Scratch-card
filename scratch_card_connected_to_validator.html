@@ -2,152 +2,138 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Scratch & Win</title>
+  <title>HypeDrop Scratch</title>
   <style>
     body {
       background-color: #192036;
-      color: white;
       font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px 20px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
 
     .logo {
-      width: 200px;
-      margin-bottom: 30px;
-    }
-
-    .card-container {
-      background-color: #1f2643;
-      border-radius: 12px;
-      padding: 30px 20px;
-      display: inline-block;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    }
-
-    h1 {
-      font-size: 24px;
+      width: 250px;
       margin-bottom: 20px;
     }
 
-    #scratchpad {
-      width: 250px;
-      height: 100px;
-      margin: 0 auto 20px;
-      background: #ccc;
-      position: relative;
-      cursor: pointer;
+    .container {
+      background-color: #1f2643;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
     }
 
-    #scratch-result {
+    .message {
+      margin-bottom: 20px;
       font-size: 20px;
-      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    canvas {
+      background-color: #999;
+      border-radius: 6px;
+      cursor: crosshair;
     }
 
     .buttons {
-      margin-top: 25px;
+      margin-top: 20px;
     }
 
-    .buttons a {
-      display: inline-block;
-      margin: 10px;
-      padding: 12px 20px;
+    .btn {
       background-color: #494f66;
+      border: none;
       color: white;
-      text-decoration: none;
+      padding: 10px 20px;
+      margin: 0 10px;
       border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-  <!-- Logo -->
-  <img src="Logo-Full-White (2).png" alt="Brand Logo" class="logo">
+  <img src="Logo-Full-White%20(2).png" class="logo" alt="HypeDrop Logo">
 
-  <!-- Scratch Card Container -->
-  <div class="card-container">
-    <h1>Scratch to reveal your reward</h1>
+  <div class="container">
+    <div class="message">Scratch to reveal your reward</div>
+    <canvas id="scratch" width="300" height="100"></canvas>
 
-    <!-- Scratch Area -->
-    <div id="scratchpad">
-      <canvas id="scratchCanvas" width="250" height="100"></canvas>
-      <div id="scratch-result" style="position:absolute; top:40px; width:100%; text-align:center;">Loading...</div>
-    </div>
-
-    <!-- Buttons -->
     <div class="buttons">
-      <a href="https://www.hypedrop.com/na/rewards" target="_blank">Go to Rewards Page</a>
-      <a href="https://www.hypedrop.com/support" target="_blank">Support</a>
+      <a href="https://www.hypedrop.com/na/rewards"><button class="btn">Go to Rewards Page</button></a>
+      <a href="https://www.hypedrop.com/support"><button class="btn">Support</button></a>
     </div>
   </div>
 
-  <!-- Scripts -->
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const resultElement = document.getElementById("scratch-result");
-
-    const validatorUrl = "https://script.google.com/macros/s/AKfycbyprkRAYbNKdZ5HTuhBje40S5JtvKld9iOKdCqwgLKTyTObOLNRmSTuk_GjuqXCVVjW/exec";
-
-    if (!code) {
-      resultElement.innerText = "❌ No code provided.";
-    } else {
-      fetch(`${validatorUrl}?code=${code}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === "valid" && data.isWinner) {
-            resultElement.innerHTML = "<strong>🎁 You WON!</strong><br>Use your reward on HypeDrop!";
-          } else if (data.status === "used") {
-            resultElement.innerHTML = "⚠️ This code has already been used.";
-          } else {
-            resultElement.innerHTML = "❌ Invalid code.";
-          }
-        })
-        .catch(err => {
-          resultElement.innerText = "⚠️ Could not validate the code.";
-          console.error(err);
-        });
-    }
-  </script>
-
-  <script>
-    const canvas = document.getElementById("scratchCanvas");
+    const canvas = document.getElementById("scratch");
     const ctx = canvas.getContext("2d");
+    const resultText = document.createElement("div");
+    resultText.style.position = "absolute";
+    resultText.style.color = "#fff";
+    resultText.style.fontSize = "18px";
+    resultText.style.fontWeight = "bold";
+    resultText.style.textAlign = "center";
+    resultText.style.width = canvas.width + "px";
+    resultText.style.height = canvas.height + "px";
+    resultText.style.lineHeight = canvas.height + "px";
+    canvas.parentNode.insertBefore(resultText, canvas);
 
     let isDrawing = false;
-    let cleared = false;
-
-    ctx.fillStyle = "#999";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     canvas.addEventListener("mousedown", () => isDrawing = true);
     canvas.addEventListener("mouseup", () => isDrawing = false);
     canvas.addEventListener("mouseleave", () => isDrawing = false);
+    canvas.addEventListener("mousemove", draw);
 
-    canvas.addEventListener("mousemove", function(e) {
-      if (!isDrawing || cleared) return;
+    ctx.fillStyle = "#999";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.globalCompositeOperation = 'destination-out';
+
+    function draw(e) {
+      if (!isDrawing) return;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      ctx.globalCompositeOperation = "destination-out";
       ctx.beginPath();
       ctx.arc(x, y, 15, 0, Math.PI * 2);
       ctx.fill();
+    }
 
-      // Check how much has been scratched
-      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      let clearPixels = 0;
-      for (let i = 3; i < pixels.length; i += 4) {
-        if (pixels[i] === 0) clearPixels++;
-      }
-      const percent = clearPixels / (canvas.width * canvas.height) * 100;
+    // Fetch reward from validator
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-      if (percent > 50 && !cleared) {
-        cleared = true;
-        canvas.style.display = "none";
+    async function checkCode() {
+      if (!code) {
+        resultText.innerHTML = "❌ No code provided.";
+        return;
       }
-    });
+
+      try {
+        const response = await fetch(`https://script.google.com/macros/s/AKfycbyprkRAYbNKdZ5HTuhBje40S5JtvKld9iOKdCqwgLKTyTObOLNRmSTuk_GjuqXCVVjW/exec?code=${code}`);
+        const data = await response.json();
+
+        if (data.status === "valid" && data.isWinner) {
+          resultText.innerHTML = "🎁 You WON! Use your reward code on HypeDrop!";
+        } else if (data.status === "valid" && !data.isWinner) {
+          resultText.innerHTML = "❌ Better luck next time!";
+        } else {
+          resultText.innerHTML = "❌ Invalid or redeemed code.";
+        }
+      } catch (err) {
+        resultText.innerHTML = "⚠️ Error validating code.";
+      }
+    }
+
+    checkCode();
   </script>
-
 </body>
 </html>
