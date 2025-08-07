@@ -98,9 +98,9 @@
     const code = new URLSearchParams(window.location.search).get('code');
 
     if (!code) {
-      resultMessage.textContent = '❌ peganosmeusovo.';
+      resultMessage.textContent = '❌ No code provided.';
     } else {
-      fetch('https://script.google.com/a/macros/ancient.gg/s/AKfycbw4uM4iPwNsDjJ0WhDOO-K54hd4cRvA3pXDccYtSx0CuZAqFPkFBw8O3u81GKXKncEutg/exec?code=' + code)
+      fetch('https://script.google.com/macros/s/AKfycbxkqzfUjH-Z4pyTxXV0fMago6JZ7QgSdX7hqtIfjNoMHsWcxmegUy7ZqPeG846rT9o6Lw/exec?code=' + code)
         
         .then(res => res.json())
         .then(data => {
