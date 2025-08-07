@@ -2,99 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scratch & Win</title>
   <style>
     body {
       background-color: #192036;
       font-family: Arial, sans-serif;
-      color: white;
       text-align: center;
-      padding: 40px;
+      color: white;
     }
-
     .logo {
-      width: 200px;
-      margin-bottom: 30px;
+      margin-top: 40px;
+      margin-bottom: 20px;
     }
-
-    .scratch-container {
+    .container {
       background-color: #1f2643;
       padding: 30px;
-      border-radius: 15px;
-      display: inline-block;
+      margin: 0 auto;
       max-width: 400px;
+      border-radius: 12px;
     }
-
-    .scratch-instruction {
-      font-size: 18px;
-      margin-bottom: 15px;
-    }
-
     canvas {
+      border: 2px dashed #444;
       margin-top: 10px;
     }
-
-    #message {
-      font-size: 24px;
-      margin-top: 20px;
-    }
-
-    .buttons {
-      margin-top: 20px;
-    }
-
-    .buttons a {
-      display: inline-block;
+    .btn {
       margin: 10px;
       padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
       background-color: #494f66;
       color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <img src="Logo-Full-White (2).png" alt="Logo" class="logo" />
+  <img src="Logo-Full-White.png" alt="Logo" class="logo" width="180"/>
 
-  <div class="scratch-container">
-    <div class="scratch-instruction">🎉 Scratch here to reveal your prize!</div>
-    <div id="scratchArea">
-      <canvas id="scratchCanvas" width="300" height="100"></canvas>
-    </div>
-    <div id="message"></div>
-    <div class="buttons">
-      <a href="https://www.hypedrop.com/na/rewards" target="_blank">Go to Rewards Page</a>
-      <a href="https://www.hypedrop.com/support" target="_blank">Need Help?</a>
+  <div class="container">
+    <h2>Scratch here and see if you’ve won!</h2>
+    <canvas id="scratchCanvas" width="300" height="100"></canvas>
+    <div id="message" style="margin-top: 20px; font-size: 20px;"></div>
+    <div style="margin-top: 20px;">
+      <button class="btn" onclick="window.location.href='https://www.hypedrop.com/na/rewards'">Go to Rewards</button>
+      <button class="btn" onclick="window.location.href='https://www.hypedrop.com/support'">Support</button>
     </div>
   </div>
 
   <script>
-    const canvas = document.getElementById('scratchCanvas');
-    const ctx = canvas.getContext('2d');
-    const messageDiv = document.getElementById('message');
-
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
 
     const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
 
-    let isWinner = false;
+    const messageDiv = document.getElementById("message");
 
-    function revealMessage() {
-      messageDiv.innerHTML = isWinner ? "🎁 You WON!" : "🙁 Better luck next time!";
+    if (!code) {
+      messageDiv.textContent = "⚠️ No code provided.";
+    } else {
+      fetch(`${apiUrl}?code=${code}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "valid") {
+            messageDiv.textContent = data.isWinner ? "🎉 You WON! 🎁" : "🙁 Better luck next time!";
+          } else {
+            messageDiv.textContent = "⚠️ Error: code invalid or already used.";
+          }
+        })
+        .catch(err => {
+          messageDiv.textContent = "⚠️ Error validating code.";
+        });
     }
 
-    fetch(`${apiUrl}?code=${code}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "valid") {
-          isWinner = data.isWinner;
-        } else {
-          messageDiv.innerHTML = "⚠️ Error: Code invalid.";
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        messageDiv.innerHTML = "⚠️ Error validating code.";
+    // Basic scratch effect
+    const canvas = document.getElementById('scratchCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#999';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'destination-out';
+
+    let isDrawing = false;
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mousemove', e => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.arc(e.clientX - rect.left, e.clientY - rect.top, 15, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  </script>
+</body>
+</html>
