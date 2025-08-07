@@ -1,137 +1,100 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scratch to Win</title>
+  <title>Scratch & Win</title>
   <style>
     body {
       background-color: #192036;
       font-family: Arial, sans-serif;
       color: white;
       text-align: center;
-      margin: 0;
-      padding: 0;
+      padding: 40px;
     }
+
     .logo {
-      margin-top: 30px;
+      width: 200px;
+      margin-bottom: 30px;
     }
-    .logo img {
-      width: 250px;
-    }
-    .container {
+
+    .scratch-container {
       background-color: #1f2643;
-      padding: 40px 30px;
-      margin: 40px auto;
-      border-radius: 12px;
-      width: 90%;
+      padding: 30px;
+      border-radius: 15px;
+      display: inline-block;
       max-width: 400px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    h2 {
-      margin-bottom: 20px;
+
+    .scratch-instruction {
+      font-size: 18px;
+      margin-bottom: 15px;
     }
-    #scratch-container {
-      position: relative;
-      width: 100%;
-      height: 150px;
-      margin-bottom: 20px;
+
+    canvas {
+      margin-top: 10px;
     }
-    #scratch-message {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      font-size: 20px;
-      font-weight: bold;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      z-index: 0;
-      pointer-events: none;
+
+    #message {
+      font-size: 24px;
+      margin-top: 20px;
     }
-    #scratch-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-      border-radius: 8px;
-    }
+
     .buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
+      margin-top: 20px;
     }
+
     .buttons a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
       background-color: #494f66;
       color: white;
-      padding: 10px 20px;
       text-decoration: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="logo">
-    <img src="https://johnns-hd.github.io/Scratch-card/assets/Logo-Full-White.png" alt="HypeDrop Logo" />
-  </div>
-  <div class="container">
-    <h2>Scratch to reveal your reward</h2>
-    <div id="scratch-container">
-      <div id="scratch-message">Loading...</div>
-      <canvas id="scratch-canvas" width="400" height="150"></canvas>
+  <img src="Logo-Full-White (2).png" alt="Logo" class="logo" />
+
+  <div class="scratch-container">
+    <div class="scratch-instruction">🎉 Scratch here to reveal your prize!</div>
+    <div id="scratchArea">
+      <canvas id="scratchCanvas" width="300" height="100"></canvas>
     </div>
+    <div id="message"></div>
     <div class="buttons">
       <a href="https://www.hypedrop.com/na/rewards" target="_blank">Go to Rewards Page</a>
-      <a href="https://www.hypedrop.com/support" target="_blank">Support</a>
+      <a href="https://www.hypedrop.com/support" target="_blank">Need Help?</a>
     </div>
   </div>
 
   <script>
-    const canvas = document.getElementById('scratch-canvas');
+    const canvas = document.getElementById('scratchCanvas');
     const ctx = canvas.getContext('2d');
-    const resultMessage = document.getElementById('scratch-message');
-    const code = new URLSearchParams(window.location.search).get('code');
+    const messageDiv = document.getElementById('message');
 
-    if (!code) {
-      resultMessage.textContent = '❌ No code provided.';
-    } else {
-      fetch('https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec?code=' + code)
-        
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 'valid') {
-            resultMessage.textContent = data.isWinner ? '🎉 You WON! Use your reward on HypeDrop!' : '🙁 Better luck next time!';
-          } else {
-            resultMessage.textContent = '❌ Invalid or redeemed code.';
-          }
-        })
-        .catch(() => {
-          resultMessage.textContent = '⚠️ Error code invalid.';
-        });
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
+
+    let isWinner = false;
+
+    function revealMessage() {
+      messageDiv.innerHTML = isWinner ? "🎁 You WON!" : "🙁 Better luck next time!";
     }
 
-    ctx.fillStyle = '#999';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = 'destination-out';
-
-    let isDrawing = false;
-    canvas.addEventListener('mousedown', () => isDrawing = true);
-    canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mouseleave', () => isDrawing = false);
-    canvas.addEventListener('mousemove', function(e) {
-      if (!isDrawing) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  </script>
-</body>
-</html>
+    fetch(`${apiUrl}?code=${code}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "valid") {
+          isWinner = data.isWinner;
+        } else {
+          messageDiv.innerHTML = "⚠️ Error: Code invalid.";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        messageDiv.innerHTML = "⚠️ Error validating code.";
