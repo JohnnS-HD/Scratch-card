@@ -22,12 +22,6 @@
       max-width: 400px;
       border-radius: 12px;
     }
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      cursor: crosshair;
-    }
     .scratch-wrapper {
       position: relative;
       width: 300px;
@@ -43,8 +37,15 @@
       transform: translate(-50%, -50%);
       font-size: 22px;
       color: #fff;
-      z-index: 1;
+      z-index: 1; /* behind canvas */
       pointer-events: none;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: crosshair;
+      z-index: 2; /* above message */
     }
     .btn {
       margin: 10px;
