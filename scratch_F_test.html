@@ -6,7 +6,7 @@
   <title>Scratch & Win</title>
   <style>
     body {
-      background-color: #192036;
+      background-color: #171e31;
       font-family: Arial, sans-serif;
       text-align: center;
       color: white;
@@ -39,6 +39,7 @@
       color: #fff;
       z-index: 1;
       pointer-events: none;
+      white-space: pre-line;
     }
     canvas {
       position: absolute;
@@ -57,17 +58,24 @@
       background-color: #494f66;
       color: white;
     }
-    .instructions {
+    .instructions-box {
+      background-color: #192036;
+      text-align: left;
+      padding: 15px;
       margin-top: 30px;
-      font-size: 15px;
-      line-height: 1.6;
+      font-size: 14px;
+      line-height: 1.4;
       color: #ccc;
-      white-space: pre-line;
+      border-radius: 8px;
+    }
+    .instructions-box a {
+      color: #ccc;
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <img src="Logo-Full-White(2).png" alt="Logo" class="logo" width="180"/>
+  <a href="https://www.hypedrop.com/" target="_blank"><img src="Logo-Full-White.png" alt="Logo" class="logo" width="180"/></a>
 
   <div class="container">
     <h2>Scratch here and get your prize</h2>
@@ -77,17 +85,16 @@
       <canvas id="scratchCanvas" width="300" height="100"></canvas>
     </div>
 
-    <div class="instructions">
+    <div class="instructions-box">
       <strong>How to redeem:</strong><br>
       Go to Rewards page<br>
-      Paste your code in "DO YOU HAVE A PROMO CODE?"<br>
-      Apply<br><br>
-      Have any doubt? Contact our support
+      Paste your code in DO YOU HAVE A PROMO CODE?<br>
+      Apply<br>
+      Have any doubt? Contact <a href="https://www.hypedrop.com/support" target="_blank">support</a>
     </div>
 
     <div style="margin-top: 20px;">
       <button class="btn" onclick="window.location.href='https://www.hypedrop.com/na/rewards'">Go to Rewards</button>
-      <button class="btn" onclick="window.location.href='https://www.hypedrop.com/support'">Support</button>
     </div>
   </div>
 
@@ -121,17 +128,16 @@
         .then(response => response.json())
         .then(data => {
           if (data.status === "valid") {
-            messageDiv.textContent = data.isWinner ? `🎉 You WON!\nCode: ${code}` : "🙁 Better luck next time!";
+            messageDiv.textContent = data.isWinner ? `🎉 You WON!
+Code: ${code}` : "🙁 Better luck next time!";
           } else {
-            messageDiv.textContent = "⚠️ Invalid or redeemed code.";
+            messageDiv.textContent = "⚠️ Invalid or redeemed code";
           }
         })
         .catch(err => {
-          messageDiv.textContent = "⚠️ Error validating code.";
+          messageDiv.textContent = "⚠️ Error validating code";
         });
     }
   </script>
 </body>
 </html>
-
-
