@@ -5,31 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scratch & Win</title>
   <style>
+    :root {
+      --bg:#171e31;
+      --card:#1f2643;
+      --ink:#fff;
+      --muted:#ccc;
+      --btn:#494f66;
+      --focus:#7a86ff;
+      --accent:#ffd76b;
+      --accent2:#7cf1ff;
+      --accent3:#b17cff;
+      --accent4:#7cff9f;
+      --accent5:#ff8aa1;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      background-color: #171e31;
+      background-color: var(--bg);
       font-family: Arial, sans-serif;
       text-align: center;
-      color: white;
+      color: var(--ink);
+      margin: 0;
+      padding: 0 12px;
+      overflow-x: hidden;
     }
+
     .logo {
       margin-top: 40px;
       margin-bottom: 20px;
+      display: inline-block;
     }
+
     .container {
-      background-color: #1f2643;
+      background-color: var(--card);
       padding: 30px;
-      margin: 0 auto;
-      max-width: 400px;
+      margin: 0 auto 60px;
+      max-width: 420px;
       border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+      animation: fadeInUp 420ms ease both;
     }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
     .scratch-wrapper {
       position: relative;
       width: 300px;
       height: 100px;
       margin: 20px auto 0 auto;
       border: 2px dashed #444;
-      background-color: #1f2643;
+      background-color: var(--card);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: box-shadow 300ms ease, transform 300ms ease;
     }
+
+    /* win pulse */
+    .win-glow {
+      box-shadow: 0 0 0 0 rgba(255,215,107,0.65);
+      animation: winPulse 1200ms ease-out 2;
+    }
+    @keyframes winPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(255,215,107,0.65); transform: translateY(0) scale(1); }
+      40%  { box-shadow: 0 0 25px 8px rgba(255,215,107,0.55); transform: translateY(-2px) scale(1.02); }
+      100% { box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
+    }
+
     #scratchMessage {
       position: absolute;
       top: 50%;
@@ -40,24 +91,68 @@
       z-index: 1;
       pointer-events: none;
       white-space: pre-line;
+      text-align: center;
+      padding: 0 10px;
     }
-    canvas {
+
+    canvas#scratchCanvas {
       position: absolute;
       top: 0;
       left: 0;
       cursor: crosshair;
       z-index: 2;
     }
+
+    /* Fullscreen confetti canvas (initially hidden) */
+    canvas#confettiCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+    }
+
+    /* ----- Animated button (hover pop + press) ----- */
     .btn {
       margin: 10px;
       padding: 12px 24px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
-      background-color: #494f66;
+      background: var(--btn);
       color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transform: translateZ(0);
+      transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        filter 160ms ease;
+      will-change: transform, box-shadow, filter;
     }
+
+    .btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+      filter: brightness(1.05);
+    }
+
+    .btn:active {
+      transform: translateY(0) scale(0.99);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+      filter: none;
+    }
+
+    .btn:focus-visible {
+      outline: 0;
+      box-shadow:
+        0 8px 18px rgba(0,0,0,0.35),
+        0 0 0 3px rgba(255,255,255,0.15),
+        0 0 0 5px var(--focus);
+    }
+
     .instructions-box {
       background-color: #192036;
       text-align: left;
@@ -65,22 +160,35 @@
       margin-top: 30px;
       font-size: 14px;
       line-height: 1.4;
-      color: #ccc;
+      color: var(--muted);
       border-radius: 8px;
     }
     .instructions-box a {
-      color: #ccc;
+      color: var(--muted);
       text-decoration: underline;
+    }
+
+    /* Respect users who prefer reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .btn { transition: none; }
+      .btn:hover, .btn:active { transform: none; }
+      .container { animation: none; }
+      .win-glow { animation: none; }
     }
   </style>
 </head>
 <body>
-  <a href="https://www.hypedrop.com/" target="_blank"><img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/></a>
+  <a href="https://www.hypedrop.com/" target="_blank" rel="noopener">
+    <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
+  </a>
+
+  <!-- Confetti canvas -->
+  <canvas id="confettiCanvas"></canvas>
 
   <div class="container">
     <h2>Scratch here and get your prize</h2>
 
-    <div class="scratch-wrapper">
+    <div class="scratch-wrapper" id="scratchWrapper">
       <div id="scratchMessage">Loading...</div>
       <canvas id="scratchCanvas" width="300" height="100"></canvas>
     </div>
@@ -90,7 +198,7 @@
       Go to Rewards page<br>
       Paste your code in DO YOU HAVE A PROMO CODE?<br>
       Apply<br>
-      Have any doubt? Contact <a href="https://www.hypedrop.com/support" target="_blank">support</a>
+      Have any doubt? Contact <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">support</a>
     </div>
 
     <div style="margin-top: 20px;">
@@ -99,46 +207,199 @@
   </div>
 
   <script>
+    // ---------- Scratch logic ----------
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
     const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
     const messageDiv = document.getElementById("scratchMessage");
+    const wrapper = document.getElementById('scratchWrapper');
 
-    const canvas = document.getElementById('scratchCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#999';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = 'destination-out';
+    const scratchCanvas = document.getElementById('scratchCanvas');
+    const sctx = scratchCanvas.getContext('2d');
+
+    // Cover layer
+    sctx.fillStyle = '#999';
+    sctx.fillRect(0, 0, scratchCanvas.width, scratchCanvas.height);
+    sctx.globalCompositeOperation = 'destination-out';
 
     let isDrawing = false;
-    canvas.addEventListener('mousedown', () => isDrawing = true);
-    canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mousemove', e => {
-      if (!isDrawing) return;
-      const rect = canvas.getBoundingClientRect();
-      ctx.beginPath();
-      ctx.arc(e.clientX - rect.left, e.clientY - rect.top, 20, 0, Math.PI * 2);
-      ctx.fill();
+
+    function scratchAt(x, y) {
+      sctx.beginPath();
+      sctx.arc(x, y, 20, 0, Math.PI * 2);
+      sctx.fill();
+    }
+
+    scratchCanvas.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      const rect = scratchCanvas.getBoundingClientRect();
+      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
     });
 
+    scratchCanvas.addEventListener('mouseup', () => isDrawing = false);
+    scratchCanvas.addEventListener('mouseleave', () => isDrawing = false);
+
+    scratchCanvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      const rect = scratchCanvas.getBoundingClientRect();
+      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    // Touch support
+    scratchCanvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      const rect = scratchCanvas.getBoundingClientRect();
+      const t = e.touches[0];
+      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: false });
+
+    scratchCanvas.addEventListener('touchend', () => { isDrawing = false; }, { passive: true });
+
+    scratchCanvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const rect = scratchCanvas.getBoundingClientRect();
+      const t = e.touches[0];
+      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: false });
+
+    // ---------- Confetti animation ----------
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const cctx = confettiCanvas.getContext('2d');
+    let confettiPieces = [];
+    let confettiActive = false;
+    let rafId = null;
+
+    function resizeConfettiCanvas() {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', () => {
+      if (confettiActive) resizeConfettiCanvas();
+    });
+
+    function createConfettiBurst(count = 160) {
+      const colors = ['#ffd76b','#7cf1ff','#b17cff','#7cff9f','#ff8aa1','#ffffff'];
+      const w = confettiCanvas.width;
+      const h = confettiCanvas.height;
+      const originX = w / 2;
+      const originY = Math.max(h * 0.2, 120);
+
+      confettiPieces = [];
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.random() * Math.PI) - (Math.PI / 2); // spread
+        const speed = 6 + Math.random() * 6;
+        confettiPieces.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - (Math.random() * 2 + 2),
+          size: Math.random() * 6 + 4,
+          color: colors[(Math.random() * colors.length) | 0],
+          rotation: Math.random() * 2 * Math.PI,
+          rotationSpeed: (Math.random() - 0.5) * 0.2,
+          shape: Math.random() < 0.5 ? 'rect' : 'circle',
+          life: 0,
+          maxLife: 120 + Math.random() * 100
+        });
+      }
+    }
+
+    function drawConfettiPiece(p) {
+      cctx.save();
+      cctx.translate(p.x, p.y);
+      cctx.rotate(p.rotation);
+      cctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
+      } else {
+        cctx.beginPath();
+        cctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
+        cctx.fill();
+      }
+      cctx.restore();
+    }
+
+    function updateConfetti() {
+      cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      for (const p of confettiPieces) {
+        p.vy += 0.12;                  // gravity
+        p.vx *= 0.995;                 // slight air resistance
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        p.life++;
+
+        // bounce off bottom a bit
+        if (p.y > confettiCanvas.height - 10) {
+          p.y = confettiCanvas.height - 10;
+          p.vy *= -0.4;
+          p.vx *= 0.9;
+        }
+
+        drawConfettiPiece(p);
+      }
+      // stop when pieces have lived long enough
+      if (confettiPieces.every(p => p.life > p.maxLife)) {
+        stopConfetti();
+        return;
+      }
+      rafId = requestAnimationFrame(updateConfetti);
+    }
+
+    function startConfetti() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      confettiActive = true;
+      confettiCanvas.style.display = 'block';
+      resizeConfettiCanvas();
+      createConfettiBurst();
+      cancelAnimationFrame(rafId);
+      updateConfetti();
+    }
+
+    function stopConfetti() {
+      confettiActive = false;
+      confettiCanvas.style.display = 'none';
+      cancelAnimationFrame(rafId);
+    }
+
+    // ---------- Win animation entry point ----------
+    function triggerWinAnimation() {
+      // pulse the scratch area
+      wrapper.classList.remove('win-glow'); // restart if applied before
+      void wrapper.offsetWidth; // reflow to reset animation
+      wrapper.classList.add('win-glow');
+
+      // confetti
+      startConfetti();
+
+      // auto stop after a while (safety)
+      setTimeout(stopConfetti, 4500);
+    }
+
+    // ---------- Fetch validation ----------
     if (!code) {
       messageDiv.textContent = "⚠️ No code provided.";
     } else {
-      fetch(`${apiUrl}?code=${code}`)
-        .then(response => response.json())
-        .then(data => {
+      fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
+        .then((response) => response.json())
+        .then((data) => {
           if (data.status === "valid") {
-            messageDiv.textContent = data.isWinner ? `🎉 You WON!
-Code: ${code}` : "🙁 Better luck next time!";
+            if (data.isWinner) {
+              messageDiv.textContent = `🎉 You WON!\nCode: ${code}`;
+              triggerWinAnimation();
+            } else {
+              messageDiv.textContent = "🙁 Better luck next time!";
+            }
           } else {
             messageDiv.textContent = "⚠️ Invalid or redeemed code";
           }
         })
-        .catch(err => {
+        .catch(() => {
           messageDiv.textContent = "⚠️ Error validating code";
         });
     }
   </script>
 </body>
 </html>
-
