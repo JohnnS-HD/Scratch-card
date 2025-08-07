@@ -387,7 +387,7 @@
         .then((data) => {
           if (data.status === "valid") {
             if (data.isWinner) {
-              messageDiv.textContent = `🎉 You WON!\nCode: ${code}`;
+              messageDiv.innerHTML = `🎉 You WON! <span style="font-weight:bold;">Code: ${code}</span>`;
               triggerWinAnimation();
             } else {
               messageDiv.textContent = "🙁 Better luck next time!";
@@ -403,3 +403,4 @@
   </script>
 </body>
 </html>
+
