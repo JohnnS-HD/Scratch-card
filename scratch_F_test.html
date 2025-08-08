@@ -272,25 +272,24 @@
 
     // Fetch validation and set message (message lives under the cover)
     if (!code) {
-      // Leave message blank; nothing visible until scratched (as requested)
-      // messageDiv.textContent = "⚠️ No code provided.";
+      // Keep message blank if no code
     } else {
       fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
         .then((r) => r.json())
         .then((data) => {
           if (data.status === "valid") {
             if (data.isWinner) {
-              // Put win text and copy button UNDER the cover
+              // Win text + copy button UNDER the cover (no timer)
               messageDiv.innerHTML = `
                 <span class="win-text">🎉 You WON! Code: <strong>${code}</strong></span>
                 <br>
                 <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
               `;
               triggerWinAnimation();
-              // Bind after inserted
-              setTimeout(() => {
-                const btn = document.getElementById("copyBtn");
-                if (!btn) return;
+
+              // Bind immediately
+              const btn = document.getElementById("copyBtn");
+              if (btn) {
                 btn.addEventListener("click", () => {
                   navigator.clipboard.writeText(code).then(() => {
                     btn.textContent = "Copied!";
@@ -300,7 +299,7 @@
                     setTimeout(() => (btn.textContent = "Copy Code"), 1500);
                   });
                 });
-              }, 0);
+              }
             } else {
               messageDiv.textContent = "🙁 Better luck next time!";
             }
