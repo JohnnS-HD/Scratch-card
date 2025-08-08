@@ -15,7 +15,6 @@
     }
 
     * { box-sizing: border-box; }
-
     body {
       background-color: var(--bg);
       font-family: Arial, sans-serif;
@@ -37,7 +36,6 @@
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
       animation: fadeInUp 420ms ease both;
     }
-
     @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
 
     h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
@@ -54,7 +52,15 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* win pulse */
+    /* subtle pulse when user starts scratching */
+    .active-glow { animation: activePulse 900ms ease-out 1; }
+    @keyframes activePulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
+      40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
+      100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+
+    /* stronger win pulse */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -62,28 +68,29 @@
       100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
+    /* Message sits UNDER the canvas so it's hidden until scratched */
     #scratchMessage {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       font-size: 20px;
       color: #fff;
-      z-index: 3;                 /* sit ABOVE the canvas */
-      pointer-events: none;       /* allow scratching by default */
+      z-index: 1;  /* under the canvas cover */
+      pointer-events: none;  /* not clickable until win */
       white-space: nowrap;
       text-align: center;
       padding: 0 10px;
     }
-    /* When won, enable clicking inside the message area */
-    .scratch-wrapper.won #scratchMessage { pointer-events: auto; }
 
     canvas#scratchCanvas {
       position: absolute;
       top: 0; left: 0;
       cursor: crosshair;
-      z-index: 2;
+      z-index: 2;  /* above message (the “cover”) */
     }
-    /* When won, stop the canvas from eating clicks */
+
+    /* After win: allow clicks on message/button and stop canvas from eating clicks */
+    .scratch-wrapper.won #scratchMessage { pointer-events: auto; }
     .scratch-wrapper.won canvas#scratchCanvas { pointer-events: none; }
 
     /* Buttons */
@@ -136,7 +143,7 @@
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .btn:hover, .btn:active { transform: none; }
-      .win-glow { animation: none; }
+      .active-glow, .win-glow { animation: none; }
     }
   </style>
 </head>
@@ -149,7 +156,7 @@
     <h2>Scratch here and get your prize</h2>
 
     <div class="scratch-wrapper" id="scratchWrapper">
-      <div id="scratchMessage">Loading...</div>
+      <div id="scratchMessage"></div> <!-- no loading text -->
       <canvas id="scratchCanvas" width="300" height="100"></canvas>
     </div>
 
@@ -201,21 +208,32 @@
     const canvas = document.getElementById("scratchCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Cover layer
+    // Draw cover (sits on top; we "erase" it with destination-out)
     ctx.fillStyle = "#999";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalCompositeOperation = "destination-out";
 
     let isDrawing = false;
+    let hasStartedScratch = false;
+
     function scratchAt(x, y) {
       ctx.beginPath();
-      ctx.arc(x, y, 35, 0, Math.PI * 2); // bigger brush
+      ctx.arc(x, y, 35, 0, Math.PI * 2); // bigger brush for faster reveal
       ctx.fill();
+    }
+
+    function startScratchAnimationOnce() {
+      if (hasStartedScratch) return;
+      hasStartedScratch = true;
+      wrapper.classList.remove("active-glow");
+      void wrapper.offsetWidth;
+      wrapper.classList.add("active-glow");
     }
 
     // Mouse
     canvas.addEventListener("mousedown", (e) => {
       isDrawing = true;
+      startScratchAnimationOnce();
       const rect = canvas.getBoundingClientRect();
       scratchAt(e.clientX - rect.left, e.clientY - rect.top);
     });
@@ -231,6 +249,7 @@
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
       isDrawing = true;
+      startScratchAnimationOnce();
       const rect = canvas.getBoundingClientRect();
       const t = e.touches[0];
       scratchAt(t.clientX - rect.left, t.clientY - rect.top);
@@ -245,33 +264,32 @@
     }, { passive: false });
 
     function triggerWinAnimation() {
-      wrapper.classList.add("won");         // enables clicks and disables canvas
+      wrapper.classList.add("won");         // enables clicks on message; disables canvas clicks
       wrapper.classList.remove("win-glow"); // restart pulse
       void wrapper.offsetWidth;
       wrapper.classList.add("win-glow");
     }
 
-    // Validation
+    // Fetch validation and set message (message lives under the cover)
     if (!code) {
-      messageDiv.textContent = "⚠️ No code provided.";
+      // Leave message blank; nothing visible until scratched (as requested)
+      // messageDiv.textContent = "⚠️ No code provided.";
     } else {
       fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
         .then((r) => r.json())
         .then((data) => {
           if (data.status === "valid") {
             if (data.isWinner) {
-              // Message + copy button (button is now above canvas and clickable)
+              // Put win text and copy button UNDER the cover
               messageDiv.innerHTML = `
                 <span class="win-text">🎉 You WON! Code: <strong>${code}</strong></span>
                 <br>
                 <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
               `;
               triggerWinAnimation();
-
-              const copyBtn = () => document.getElementById("copyBtn");
-              // bind after inserted
+              // Bind after inserted
               setTimeout(() => {
-                const btn = copyBtn();
+                const btn = document.getElementById("copyBtn");
                 if (!btn) return;
                 btn.addEventListener("click", () => {
                   navigator.clipboard.writeText(code).then(() => {
