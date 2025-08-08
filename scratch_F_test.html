@@ -26,11 +26,7 @@
       overflow-x: hidden;
     }
 
-    .logo {
-      margin-top: 40px;
-      margin-bottom: 20px;
-      display: inline-block;
-    }
+    .logo { margin-top: 40px; margin-bottom: 20px; display: inline-block; }
 
     .container {
       background-color: var(--card);
@@ -42,16 +38,9 @@
       animation: fadeInUp 420ms ease both;
     }
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
 
-    h2 {
-      margin: 0 0 12px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
+    h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
 
     .scratch-wrapper {
       position: relative;
@@ -62,31 +51,42 @@
       background-color: var(--card);
       border-radius: 10px;
       overflow: hidden;
+      transition: box-shadow 300ms ease, transform 300ms ease;
+    }
+
+    /* win pulse */
+    .win-glow { animation: winPulse 1200ms ease-out 2; }
+    @keyframes winPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
+      40%{ box-shadow: 0 0 25px 8px rgba(255,215,107,0.5); transform: translateY(-2px) scale(1.02); }
+      100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
     #scratchMessage {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 22px;
+      font-size: 20px;
       color: #fff;
-      z-index: 1;
-      pointer-events: none;
+      z-index: 3;                 /* sit ABOVE the canvas */
+      pointer-events: none;       /* allow scratching by default */
       white-space: nowrap;
       text-align: center;
       padding: 0 10px;
     }
+    /* When won, enable clicking inside the message area */
+    .scratch-wrapper.won #scratchMessage { pointer-events: auto; }
 
     canvas#scratchCanvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 0; left: 0;
       cursor: crosshair;
       z-index: 2;
     }
+    /* When won, stop the canvas from eating clicks */
+    .scratch-wrapper.won canvas#scratchCanvas { pointer-events: none; }
 
-    /* ----- Animated button ----- */
+    /* Buttons */
     .btn {
       margin: 10px;
       padding: 12px 24px;
@@ -100,22 +100,15 @@
       transform: translateZ(0);
       transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
     }
-    .btn:hover {
-      transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
-      filter: brightness(1.05);
-    }
-    .btn:active {
-      transform: translateY(0) scale(0.99);
-      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-      filter: none;
-    }
+    .btn:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 18px rgba(0,0,0,0.35); filter: brightness(1.05); }
+    .btn:active { transform: translateY(0) scale(0.99); box-shadow: 0 3px 10px rgba(0,0,0,0.3); }
     .btn:focus-visible {
       outline: 0;
       box-shadow: 0 8px 18px rgba(0,0,0,0.35),
                   0 0 0 3px rgba(255,255,255,0.15),
                   0 0 0 5px var(--focus);
     }
+    .btn-small { padding: 6px 12px; font-size: 14px; margin-top: 8px; }
 
     .instructions-box {
       background-color: #192036;
@@ -127,62 +120,23 @@
       color: var(--muted);
       border-radius: 8px;
     }
-    .instructions-box a {
-      color: var(--muted);
-      text-decoration: underline;
-    }
+    .instructions-box a { color: var(--muted); text-decoration: underline; }
 
-    /* ----- Socials with images only ----- */
-    .socials-wrap {
-      margin: 22px auto 0;
-      max-width: 560px;
-    }
-    .socials-label {
-      font-size: 14px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-    .socials {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-    .social {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      width: 80px;
-    }
-    .social a {
-      display: inline-block;
-      transition: transform 160ms ease, filter 160ms ease;
-    }
-    .social a:hover {
-      transform: scale(1.08);
-      filter: brightness(1.1);
-    }
-  .social a img {
-  width: 60px;
-  height: auto;
-  object-fit: contain;
-  display: block;
-}
-
-/* Specific boost for the Discord logo */
-.social a img[src*="discord"] {
-  transform: scale(1.25); /* 25% bigger */
-}
-    .social span {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1;
-    }
+    /* Socials (images only) */
+    .socials-wrap { margin:22px auto 0; max-width:560px; }
+    .socials-label { font-size:14px; color:var(--muted); margin-bottom:10px; }
+    .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
+    .social { display:flex; flex-direction:column; align-items:center; gap:6px; width:80px; }
+    .social a { display:inline-block; transition: transform 160ms ease, filter 160ms ease; }
+    .social a:hover { transform: scale(1.08); filter: brightness(1.1); }
+    .social a img { width:60px; height:auto; object-fit:contain; display:block; }
+    .social a img[src*="discord"] { transform: scale(1.25); } /* boost for padded discord asset */
+    .social span { font-size:12px; color:var(--muted); line-height:1; }
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .btn:hover, .btn:active { transform: none; }
+      .win-glow { animation: none; }
     }
   </style>
 </head>
@@ -218,130 +172,128 @@
     <div class="socials">
       <div class="social">
         <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
-          <img src="Discord
-.png" alt="Discord"/>
+          <img src="Discord.png" alt="Discord"/>
         </a>
+        <span>Discord</span>
       </div>
       <div class="social">
         <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
           <img src="instagram-new--v2.png" alt="Instagram"/>
         </a>
+        <span>Instagram</span>
       </div>
       <div class="social">
         <a href="https://x.com/HypeDrop" target="_blank" rel="noopener" aria-label="X" title="X">
           <img src="X_logo_2023_(white).png" alt="X"/>
         </a>
+        <span>X</span>
       </div>
     </div>
   </div>
 
- <script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get("code");
-  const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
-  const messageDiv = document.getElementById("scratchMessage");
-  const wrapper = document.getElementById('scratchWrapper');
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
 
-  const canvas = document.getElementById('scratchCanvas');
-  const ctx = canvas.getContext('2d');
+    const messageDiv = document.getElementById("scratchMessage");
+    const wrapper = document.getElementById("scratchWrapper");
+    const canvas = document.getElementById("scratchCanvas");
+    const ctx = canvas.getContext("2d");
 
-  // Cover layer
-  ctx.fillStyle = '#999';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.globalCompositeOperation = 'destination-out';
+    // Cover layer
+    ctx.fillStyle = "#999";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = "destination-out";
 
-  let isDrawing = false;
+    let isDrawing = false;
+    function scratchAt(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 35, 0, Math.PI * 2); // bigger brush
+      ctx.fill();
+    }
 
-  function scratchAt(x, y) {
-    ctx.beginPath();
-    ctx.arc(x, y, 35, 0, Math.PI * 2); // bigger brush
-    ctx.fill();
-  }
+    // Mouse
+    canvas.addEventListener("mousedown", (e) => {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    canvas.addEventListener("mouseup", () => (isDrawing = false));
+    canvas.addEventListener("mouseleave", () => (isDrawing = false));
+    canvas.addEventListener("mousemove", (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+    });
 
-  // Mouse events
-  canvas.addEventListener('mousedown', (e) => {
-    isDrawing = true;
-    const rect = canvas.getBoundingClientRect();
-    scratchAt(e.clientX - rect.left, e.clientY - rect.top);
-  });
-  canvas.addEventListener('mouseup', () => isDrawing = false);
-  canvas.addEventListener('mouseleave', () => isDrawing = false);
-  canvas.addEventListener('mousemove', (e) => {
-    if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    scratchAt(e.clientX - rect.left, e.clientY - rect.top);
-  });
+    // Touch
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: false });
+    canvas.addEventListener("touchend", () => { isDrawing = false; }, { passive: true });
+    canvas.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: false });
 
-  // Touch events
-  canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    isDrawing = true;
-    const rect = canvas.getBoundingClientRect();
-    const t = e.touches[0];
-    scratchAt(t.clientX - rect.left, t.clientY - rect.top);
-  }, { passive: false });
-  canvas.addEventListener('touchend', () => { isDrawing = false; }, { passive: true });
-  canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const t = e.touches[0];
-    scratchAt(t.clientX - rect.left, t.clientY - rect.top);
-  }, { passive: false });
+    function triggerWinAnimation() {
+      wrapper.classList.add("won");         // enables clicks and disables canvas
+      wrapper.classList.remove("win-glow"); // restart pulse
+      void wrapper.offsetWidth;
+      wrapper.classList.add("win-glow");
+    }
 
-  // Win animation
-  function triggerWinAnimation() {
-    wrapper.classList.remove('win-glow'); 
-    void wrapper.offsetWidth; // restart animation
-    wrapper.classList.add('win-glow');
-    // Here you could also trigger confetti if you had it before
-  }
+    // Validation
+    if (!code) {
+      messageDiv.textContent = "⚠️ No code provided.";
+    } else {
+      fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.status === "valid") {
+            if (data.isWinner) {
+              // Message + copy button (button is now above canvas and clickable)
+              messageDiv.innerHTML = `
+                <span class="win-text">🎉 You WON! Code: <strong>${code}</strong></span>
+                <br>
+                <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
+              `;
+              triggerWinAnimation();
 
-  // Validation
-  if (!code) {
-    messageDiv.textContent = "⚠️ No code provided.";
-  } else {
-    fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.status === "valid") {
-          if (data.isWinner) {
-            // Show message & copy button
-            messageDiv.innerHTML = `
-              🎉 You WON! Code: <strong>${code}</strong><br>
-              <button id="copyBtn" style="
-                margin-top:8px;
-                padding:6px 12px;
-                font-size:14px;
-                background:#494f66;
-                color:#fff;
-                border:none;
-                border-radius:6px;
-                cursor:pointer;
-              ">Copy Code</button>
-            `;
-            triggerWinAnimation();
-            // Activate copy button after adding to DOM
-            setTimeout(() => {
-              document.getElementById("copyBtn").addEventListener("click", () => {
-                navigator.clipboard.writeText(code).then(() => {
-                  const btn = document.getElementById("copyBtn");
-                  btn.textContent = "Copied!";
-                  setTimeout(() => btn.textContent = "Copy Code", 1500);
+              const copyBtn = () => document.getElementById("copyBtn");
+              // bind after inserted
+              setTimeout(() => {
+                const btn = copyBtn();
+                if (!btn) return;
+                btn.addEventListener("click", () => {
+                  navigator.clipboard.writeText(code).then(() => {
+                    btn.textContent = "Copied!";
+                    setTimeout(() => (btn.textContent = "Copy Code"), 1500);
+                  }).catch(() => {
+                    btn.textContent = "Copy failed";
+                    setTimeout(() => (btn.textContent = "Copy Code"), 1500);
+                  });
                 });
-              });
-            }, 0);
+              }, 0);
+            } else {
+              messageDiv.textContent = "🙁 Better luck next time!";
+            }
           } else {
-            messageDiv.textContent = "🙁 Better luck next time!";
+            messageDiv.textContent = "⚠️ Invalid or redeemed code";
           }
-        } else {
-          messageDiv.textContent = "⚠️ Invalid or redeemed code";
-        }
-      })
-      .catch(() => {
-        messageDiv.textContent = "⚠️ Error validating code";
-      });
-  }
-</script>
-
-
+        })
+        .catch(() => {
+          messageDiv.textContent = "⚠️ Error validating code";
+        });
+    }
+  </script>
+</body>
+</html>
