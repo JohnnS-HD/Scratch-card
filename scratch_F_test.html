@@ -50,15 +50,14 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* subtle pulse when user starts scratching */
+    /* glow when user first scratches (purely visual) */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
-
-    /* win pulse */
+    /* win pulse (purely visual) */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -73,8 +72,8 @@
       transform: translate(-50%, -50%);
       font-size: 18px;
       color: #fff;
-      z-index: 1;        /* under the cover */
-      pointer-events: none; /* enabled on win */
+      z-index: 1;              /* under the cover */
+      pointer-events: none;    /* clicks pass through; we click below instead */
       white-space: nowrap;
       text-align: center;
       padding: 0 10px;
@@ -84,12 +83,25 @@
       position: absolute;
       top: 0; left: 0;
       cursor: crosshair;
-      z-index: 2;     /* the cover */
+      z-index: 2;              /* the cover you scratch */
     }
 
-    /* After win: allow clicks on message/button and stop canvas from eating clicks */
-    .scratch-wrapper.won #scratchMessage { pointer-events: auto; position: relative; z-index: 3; }
-    .scratch-wrapper.won canvas#scratchCanvas { pointer-events: none; }
+    /* Copy row BELOW the scratch area so it's always clickable */
+    #copyRow {
+      display: none;
+      margin: 10px auto 0;
+      max-width: 420px;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    #copyRow .code {
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.08);
+      margin: 0 6px;
+    }
 
     /* Buttons */
     .btn {
@@ -113,7 +125,7 @@
                   0 0 0 3px rgba(255,255,255,0.15),
                   0 0 0 5px var(--focus);
     }
-    .btn-small { padding: 6px 12px; font-size: 14px; margin-top: 8px; }
+    .btn-small { padding: 6px 12px; font-size: 14px; }
 
     .instructions-box {
       background-color: #192036;
@@ -131,11 +143,8 @@
     .socials-wrap { margin:22px auto 0; max-width:560px; }
     .socials-label { font-size:14px; color:var(--muted); margin-bottom:10px; }
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
-    .social { display:flex; flex-direction:column; align-items:center; gap:6px; width:80px; }
-    .social a { display:inline-block; transition: transform 160ms ease, filter 160ms ease; }
-    .social a:hover { transform: scale(1.08); filter: brightness(1.1); }
     .social a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .social a img[src*="discord"] { transform: scale(1.25); } /* boost for padded discord asset */
+    .social a img[src*="discord"] { transform: scale(1.25); }
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
@@ -145,7 +154,7 @@
 
     /* shimmer placeholder */
     .placeholder {
-      width: 100%;
+      width: 220px;
       display: inline-block;
       height: 1.2em;
       border-radius: 6px;
@@ -168,8 +177,17 @@
     <h2>Scratch here and get your prize</h2>
 
     <div class="scratch-wrapper" id="scratchWrapper">
-      <div id="scratchMessage"></div>
+      <!-- Prize/placeholder under the cover -->
+      <div id="scratchMessage"><span class="placeholder"></span></div>
+      <!-- The cover you scratch off -->
       <canvas id="scratchCanvas" width="300" height="100"></canvas>
+    </div>
+
+    <!-- Copy row shown below when winner (always clickable, never under canvas) -->
+    <div id="copyRow">
+      <span>🎉 You WON! Code:</span>
+      <span id="copyCode" class="code"></span>
+      <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
     </div>
 
     <div class="instructions-box">
@@ -189,15 +207,9 @@
   <div class="socials-wrap">
     <div class="socials-label">Join us on socials</div>
     <div class="socials">
-      <div class="social">
-        <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="Discord.png" alt="Discord"/></a>
-      </div>
-      <div class="social">
-        <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener"><img src="instagram-new--v2.png" alt="Instagram"/></a>
-      </div>
-      <div class="social">
-        <a href="https://x.com/HypeDrop" target="_blank" rel="noopener"><img src="X_logo_2023_(white).png" alt="X"/></a>
-      </div>
+      <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="Discord.png" alt="Discord"/></a>
+      <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener"><img src="instagram-new--v2.png" alt="Instagram"/></a>
+      <a href="https://x.com/HypeDrop" target="_blank" rel="noopener"><img src="X_logo_2023_(white).png" alt="X"/></a>
     </div>
   </div>
 
@@ -211,150 +223,117 @@
     const canvas = document.getElementById("scratchCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Draw cover (we erase it via destination-out)
+    const copyRow  = document.getElementById("copyRow");
+    const copyCode = document.getElementById("copyCode");
+    const copyBtn  = document.getElementById("copyBtn");
+
+    // Draw cover (we erase it via destination-out) — canvas ALWAYS accepts input
     ctx.fillStyle = "#999";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalCompositeOperation = "destination-out";
 
-    let isDrawing = false;
-    let hasStartedScratch = false;
-    let pendingWin = false;   // API says it's a winner but we haven't crossed threshold yet
-    let winnerCode = "";      // store the code for copy handler
+    const BRUSH = 45; // fast reveal
 
-    const BRUSH = 45;         // faster reveal
-    const THRESHOLD = 40;     // % of area to clear before enabling win state
+    let isDrawing = false;
+    let startedGlow = false;
+    let isWinner   = false;
+    let winnerCode = "";
 
     function scratchAt(x, y) {
       ctx.beginPath();
       ctx.arc(x, y, BRUSH, 0, Math.PI * 2);
       ctx.fill();
-      checkScratchCompletion();
     }
 
-    function startScratchAnimationOnce() {
-      if (!hasStartedScratch) {
-        hasStartedScratch = true;
+    function startGlowOnce() {
+      if (!startedGlow) {
+        startedGlow = true;
         wrapper.classList.remove("active-glow");
         void wrapper.offsetWidth;
         wrapper.classList.add("active-glow");
-        // If the API already marked as winner and threshold already crossed, win will trigger in checkScratchCompletion
       }
     }
 
-    function triggerWinAnimation() {
-      // Make message clickable and stop canvas from intercepting clicks
-      wrapper.classList.add("won");
+    function winPulse() {
       wrapper.classList.remove("win-glow");
       void wrapper.offsetWidth;
       wrapper.classList.add("win-glow");
-      attachCopyHandlerIfExists();
-    }
-
-    function attachCopyHandlerIfExists() {
-      const btn = document.getElementById("copyBtn");
-      if (btn) {
-        btn.onclick = () => {
-          navigator.clipboard.writeText(winnerCode).then(() => {
-            btn.textContent = "Copied!";
-            setTimeout(() => (btn.textContent = "Copy Code"), 1500);
-          }).catch(() => {
-            btn.textContent = "Copy failed";
-            setTimeout(() => (btn.textContent = "Copy Code"), 1500);
-          });
-        };
-      }
-    }
-
-    function getClearedPercent() {
-      const { width, height } = canvas;
-      const imageData = ctx.getImageData(0, 0, width, height);
-      let cleared = 0;
-      // Count fully transparent pixels (alpha == 0)
-      for (let i = 3; i < imageData.data.length; i += 4) {
-        if (imageData.data[i] === 0) cleared++;
-      }
-      return cleared / (width * height) * 100;
-    }
-
-    function checkScratchCompletion() {
-      const percent = getClearedPercent();
-      // Only trigger once the user has actually cleared enough and it's a winner
-      if (pendingWin && percent >= THRESHOLD) {
-        pendingWin = false; // consume
-        triggerWinAnimation();
-      }
     }
 
     // Mouse
     canvas.addEventListener("mousedown", (e) => {
       isDrawing = true;
-      startScratchAnimationOnce();
-      const rect = canvas.getBoundingClientRect();
-      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+      startGlowOnce();
+      const r = canvas.getBoundingClientRect();
+      scratchAt(e.clientX - r.left, e.clientY - r.top);
     });
-    canvas.addEventListener("mouseup", () => (isDrawing = false));
-    canvas.addEventListener("mouseleave", () => (isDrawing = false));
+    canvas.addEventListener("mouseup",   () => isDrawing = false);
+    canvas.addEventListener("mouseleave",()=> isDrawing = false);
     canvas.addEventListener("mousemove", (e) => {
       if (!isDrawing) return;
-      const rect = canvas.getBoundingClientRect();
-      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+      const r = canvas.getBoundingClientRect();
+      scratchAt(e.clientX - r.left, e.clientY - r.top);
     });
 
     // Touch
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
       isDrawing = true;
-      startScratchAnimationOnce();
-      const rect = canvas.getBoundingClientRect();
+      startGlowOnce();
+      const r = canvas.getBoundingClientRect();
       const t = e.touches[0];
-      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+      scratchAt(t.clientX - r.left, t.clientY - r.top);
     }, { passive: false });
-    canvas.addEventListener("touchend", () => { isDrawing = false; }, { passive: true });
+    canvas.addEventListener("touchend",  () => { isDrawing = false; }, { passive: true });
     canvas.addEventListener("touchmove", (e) => {
       e.preventDefault();
       if (!isDrawing) return;
-      const rect = canvas.getBoundingClientRect();
+      const r = canvas.getBoundingClientRect();
       const t = e.touches[0];
-      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+      scratchAt(t.clientX - r.left, t.clientY - r.top);
     }, { passive: false });
 
-    // Fetch validation and set message under the cover
-    if (code) {
-      // Show a shimmer under the cover immediately
-      messageDiv.innerHTML = `<span class="placeholder" style="width:220px;"></span>`;
+    // Copy handler (always available when the row is shown)
+    copyBtn.addEventListener("click", () => {
+      if (!winnerCode) return;
+      navigator.clipboard.writeText(winnerCode).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy Code"), 1500);
+      }).catch(() => {
+        copyBtn.textContent = "Copy failed";
+        setTimeout(() => (copyBtn.textContent = "Copy Code"), 1500);
+      });
+    });
 
+    // Fetch prize; just swap the text UNDER the cover whenever it returns
+    if (code) {
       fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
-        .then((r) => r.json())
-        .then((data) => {
+        .then(r => r.json())
+        .then(data => {
           if (data.status === "valid") {
             if (data.isWinner) {
+              isWinner = true;
               winnerCode = code;
-              // Put the full win UI under the cover now
-              messageDiv.innerHTML = `
-                🎉 You WON! Code: <strong>${code}</strong><br>
-                <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
-              `;
-              // Mark as pending; we'll flip to .won after threshold scratched
-              pendingWin = true;
-
-              // If user already scratched enough before result arrived, trigger immediately
-              if (getClearedPercent() >= THRESHOLD) {
-                pendingWin = false;
-                triggerWinAnimation();
-              } else {
-                // Attach click handler now; it will become clickable once .won flips
-                attachCopyHandlerIfExists();
-              }
+              // Put win text under cover
+              messageDiv.innerHTML = `🎉 You WON! Code: <strong>${code}</strong>`;
+              // Show copy row (always clickable; not under canvas)
+              copyCode.textContent = code;
+              copyRow.style.display = "block";
+              // Visual pulse (does not change input)
+              winPulse();
             } else {
-              // Non-winner: just show the message under cover; user can reveal by scratching
+              isWinner = false;
               messageDiv.textContent = "🙁 Better luck next time!";
+              copyRow.style.display = "none";
             }
           } else {
             messageDiv.textContent = "⚠️ Invalid or redeemed code";
+            copyRow.style.display = "none";
           }
         })
         .catch(() => {
           messageDiv.textContent = "⚠️ Error validating code";
+          copyRow.style.display = "none";
         });
     }
   </script>
