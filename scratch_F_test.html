@@ -12,11 +12,6 @@
       --muted:#ccc;
       --btn:#494f66;
       --focus:#7a86ff;
-      --accent:#ffd76b;
-      --accent2:#7cf1ff;
-      --accent3:#b17cff;
-      --accent4:#7cff9f;
-      --accent5:#ff8aa1;
     }
 
     * { box-sizing: border-box; }
@@ -27,7 +22,7 @@
       text-align: center;
       color: var(--ink);
       margin: 0;
-      padding: 0 12px;
+      padding: 0 12px 40px;
       overflow-x: hidden;
     }
 
@@ -40,7 +35,7 @@
     .container {
       background-color: var(--card);
       padding: 30px;
-      margin: 0 auto 60px;
+      margin: 0 auto 20px;
       max-width: 420px;
       border-radius: 12px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
@@ -67,18 +62,6 @@
       background-color: var(--card);
       border-radius: 10px;
       overflow: hidden;
-      transition: box-shadow 300ms ease, transform 300ms ease;
-    }
-
-    /* win pulse */
-    .win-glow {
-      box-shadow: 0 0 0 0 rgba(255,215,107,0.65);
-      animation: winPulse 1200ms ease-out 2;
-    }
-    @keyframes winPulse {
-      0%   { box-shadow: 0 0 0 0 rgba(255,215,107,0.65); transform: translateY(0) scale(1); }
-      40%  { box-shadow: 0 0 25px 8px rgba(255,215,107,0.55); transform: translateY(-2px) scale(1.02); }
-      100% { box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
     #scratchMessage {
@@ -90,7 +73,7 @@
       color: #fff;
       z-index: 1;
       pointer-events: none;
-      white-space: pre-line;
+      white-space: nowrap;
       text-align: center;
       padding: 0 10px;
     }
@@ -103,18 +86,7 @@
       z-index: 2;
     }
 
-    /* Fullscreen confetti canvas (initially hidden) */
-    canvas#confettiCanvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 999;
-      display: none;
-    }
-
-    /* ----- Animated button (hover pop + press) ----- */
+    /* ----- Animated button ----- */
     .btn {
       margin: 10px;
       padding: 12px 24px;
@@ -126,31 +98,23 @@
       color: white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       transform: translateZ(0);
-      transition:
-        transform 160ms ease,
-        box-shadow 160ms ease,
-        filter 160ms ease;
-      will-change: transform, box-shadow, filter;
+      transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
     }
-
     .btn:hover {
       transform: translateY(-2px) scale(1.03);
       box-shadow: 0 8px 18px rgba(0,0,0,0.35);
       filter: brightness(1.05);
     }
-
     .btn:active {
       transform: translateY(0) scale(0.99);
       box-shadow: 0 3px 10px rgba(0,0,0,0.3);
       filter: none;
     }
-
     .btn:focus-visible {
       outline: 0;
-      box-shadow:
-        0 8px 18px rgba(0,0,0,0.35),
-        0 0 0 3px rgba(255,255,255,0.15),
-        0 0 0 5px var(--focus);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35),
+                  0 0 0 3px rgba(255,255,255,0.15),
+                  0 0 0 5px var(--focus);
     }
 
     .instructions-box {
@@ -168,12 +132,57 @@
       text-decoration: underline;
     }
 
-    /* Respect users who prefer reduced motion */
+    /* ----- Socials with images only ----- */
+    .socials-wrap {
+      margin: 22px auto 0;
+      max-width: 560px;
+    }
+    .socials-label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .socials {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .social {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 80px;
+    }
+    .social a {
+      display: inline-block;
+      transition: transform 160ms ease, filter 160ms ease;
+    }
+    .social a:hover {
+      transform: scale(1.08);
+      filter: brightness(1.1);
+    }
+  .social a img {
+  width: 60px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Specific boost for the Discord logo */
+.social a img[src*="discord"] {
+  transform: scale(1.25); /* 25% bigger */
+}
+    .social span {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .btn:hover, .btn:active { transform: none; }
-      .container { animation: none; }
-      .win-glow { animation: none; }
     }
   </style>
 </head>
@@ -181,9 +190,6 @@
   <a href="https://www.hypedrop.com/" target="_blank" rel="noopener">
     <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
   </a>
-
-  <!-- Confetti canvas -->
-  <canvas id="confettiCanvas"></canvas>
 
   <div class="container">
     <h2>Scratch here and get your prize</h2>
@@ -206,201 +212,125 @@
     </div>
   </div>
 
-  <script>
-    // ---------- Scratch logic ----------
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-    const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
-    const messageDiv = document.getElementById("scratchMessage");
-    const wrapper = document.getElementById('scratchWrapper');
+  <!-- Socials outside the container -->
+  <div class="socials-wrap">
+    <div class="socials-label">Join us on socials</div>
+    <div class="socials">
+      <div class="social">
+        <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+          <img src="Discord
+.png" alt="Discord"/>
+        </a>
+      </div>
+      <div class="social">
+        <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+          <img src="instagram-new--v2.png" alt="Instagram"/>
+        </a>
+      </div>
+      <div class="social">
+        <a href="https://x.com/HypeDrop" target="_blank" rel="noopener" aria-label="X" title="X">
+          <img src="X_logo_2023_(white).png" alt="X"/>
+        </a>
+      </div>
+    </div>
+  </div>
 
-    const scratchCanvas = document.getElementById('scratchCanvas');
-    const sctx = scratchCanvas.getContext('2d');
+ <script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
+  const messageDiv = document.getElementById("scratchMessage");
 
-    // Cover layer
-    sctx.fillStyle = '#999';
-    sctx.fillRect(0, 0, scratchCanvas.width, scratchCanvas.height);
-    sctx.globalCompositeOperation = 'destination-out';
+  const canvas = document.getElementById('scratchCanvas');
+  const ctx = canvas.getContext('2d');
 
-    let isDrawing = false;
+  // Cover layer
+  ctx.fillStyle = '#999';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.globalCompositeOperation = 'destination-out';
 
-    function scratchAt(x, y) {
-      sctx.beginPath();
-      sctx.arc(x, y, 20, 0, Math.PI * 2);
-      sctx.fill();
-    }
+  let isDrawing = false;
 
-    scratchCanvas.addEventListener('mousedown', (e) => {
-      isDrawing = true;
-      const rect = scratchCanvas.getBoundingClientRect();
-      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
-    });
+  function scratchAt(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-    scratchCanvas.addEventListener('mouseup', () => isDrawing = false);
-    scratchCanvas.addEventListener('mouseleave', () => isDrawing = false);
+  canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+  });
 
-    scratchCanvas.addEventListener('mousemove', (e) => {
-      if (!isDrawing) return;
-      const rect = scratchCanvas.getBoundingClientRect();
-      scratchAt(e.clientX - rect.left, e.clientY - rect.top);
-    });
+  canvas.addEventListener('mouseup', () => isDrawing = false);
+  canvas.addEventListener('mouseleave', () => isDrawing = false);
 
-    // Touch support
-    scratchCanvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      isDrawing = true;
-      const rect = scratchCanvas.getBoundingClientRect();
-      const t = e.touches[0];
-      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
-    }, { passive: false });
+  canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+  });
 
-    scratchCanvas.addEventListener('touchend', () => { isDrawing = false; }, { passive: true });
+  // Touch support
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+  }, { passive: false });
 
-    scratchCanvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (!isDrawing) return;
-      const rect = scratchCanvas.getBoundingClientRect();
-      const t = e.touches[0];
-      scratchAt(t.clientX - rect.left, t.clientY - rect.top);
-    }, { passive: false });
+  canvas.addEventListener('touchend', () => { isDrawing = false; }, { passive: true });
 
-    // ---------- Confetti animation ----------
-    const confettiCanvas = document.getElementById('confettiCanvas');
-    const cctx = confettiCanvas.getContext('2d');
-    let confettiPieces = [];
-    let confettiActive = false;
-    let rafId = null;
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+  }, { passive: false });
 
-    function resizeConfettiCanvas() {
-      confettiCanvas.width = window.innerWidth;
-      confettiCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', () => {
-      if (confettiActive) resizeConfettiCanvas();
-    });
-
-    function createConfettiBurst(count = 160) {
-      const colors = ['#ffd76b','#7cf1ff','#b17cff','#7cff9f','#ff8aa1','#ffffff'];
-      const w = confettiCanvas.width;
-      const h = confettiCanvas.height;
-      const originX = w / 2;
-      const originY = Math.max(h * 0.2, 120);
-
-      confettiPieces = [];
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.random() * Math.PI) - (Math.PI / 2); // spread
-        const speed = 6 + Math.random() * 6;
-        confettiPieces.push({
-          x: originX,
-          y: originY,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - (Math.random() * 2 + 2),
-          size: Math.random() * 6 + 4,
-          color: colors[(Math.random() * colors.length) | 0],
-          rotation: Math.random() * 2 * Math.PI,
-          rotationSpeed: (Math.random() - 0.5) * 0.2,
-          shape: Math.random() < 0.5 ? 'rect' : 'circle',
-          life: 0,
-          maxLife: 120 + Math.random() * 100
-        });
-      }
-    }
-
-    function drawConfettiPiece(p) {
-      cctx.save();
-      cctx.translate(p.x, p.y);
-      cctx.rotate(p.rotation);
-      cctx.fillStyle = p.color;
-      if (p.shape === 'rect') {
-        cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
-      } else {
-        cctx.beginPath();
-        cctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
-        cctx.fill();
-      }
-      cctx.restore();
-    }
-
-    function updateConfetti() {
-      cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-      for (const p of confettiPieces) {
-        p.vy += 0.12;                  // gravity
-        p.vx *= 0.995;                 // slight air resistance
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rotation += p.rotationSpeed;
-        p.life++;
-
-        // bounce off bottom a bit
-        if (p.y > confettiCanvas.height - 10) {
-          p.y = confettiCanvas.height - 10;
-          p.vy *= -0.4;
-          p.vx *= 0.9;
-        }
-
-        drawConfettiPiece(p);
-      }
-      // stop when pieces have lived long enough
-      if (confettiPieces.every(p => p.life > p.maxLife)) {
-        stopConfetti();
-        return;
-      }
-      rafId = requestAnimationFrame(updateConfetti);
-    }
-
-    function startConfetti() {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      confettiActive = true;
-      confettiCanvas.style.display = 'block';
-      resizeConfettiCanvas();
-      createConfettiBurst();
-      cancelAnimationFrame(rafId);
-      updateConfetti();
-    }
-
-    function stopConfetti() {
-      confettiActive = false;
-      confettiCanvas.style.display = 'none';
-      cancelAnimationFrame(rafId);
-    }
-
-    // ---------- Win animation entry point ----------
-    function triggerWinAnimation() {
-      // pulse the scratch area
-      wrapper.classList.remove('win-glow'); // restart if applied before
-      void wrapper.offsetWidth; // reflow to reset animation
-      wrapper.classList.add('win-glow');
-
-      // confetti
-      startConfetti();
-
-      // auto stop after a while (safety)
-      setTimeout(stopConfetti, 4500);
-    }
-
-    // ---------- Fetch validation ----------
-    if (!code) {
-      messageDiv.textContent = "⚠️ No code provided.";
-    } else {
-      fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.status === "valid") {
-            if (data.isWinner) {
-              messageDiv.innerHTML = `🎉 You WON! <span style="font-weight:bold;">Code: ${code}</span>`;
-              triggerWinAnimation();
-            } else {
-              messageDiv.textContent = "🙁 Better luck next time!";
-            }
+  // Validation
+  if (!code) {
+    messageDiv.textContent = "⚠️ No code provided.";
+  } else {
+    fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.status === "valid") {
+          if (data.isWinner) {
+            // Show win message with copy button
+            messageDiv.innerHTML = `
+              🎉 You WON! Code: <strong>${code}</strong><br>
+              <button id="copyBtn" style="
+                margin-top:8px;
+                padding:6px 12px;
+                font-size:14px;
+                background:#494f66;
+                color:#fff;
+                border:none;
+                border-radius:6px;
+                cursor:pointer;
+              ">Copy Code</button>
+            `;
+            document.getElementById("copyBtn").addEventListener("click", () => {
+              navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById("copyBtn");
+                btn.textContent = "Copied!";
+                setTimeout(() => btn.textContent = "Copy Code", 1500);
+              });
+            });
           } else {
-            messageDiv.textContent = "⚠️ Invalid or redeemed code";
+            messageDiv.textContent = "🙁 Better luck next time!";
           }
-        })
-        .catch(() => {
-          messageDiv.textContent = "⚠️ Error validating code";
-        });
-    }
-  </script>
-</body>
-</html>
+        } else {
+          messageDiv.textContent = "⚠️ Invalid or redeemed code";
+        }
+      })
+      .catch(() => {
+        messageDiv.textContent = "⚠️ Error validating code";
+      });
+  }
+</script>
 
