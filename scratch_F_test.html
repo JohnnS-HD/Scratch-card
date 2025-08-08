@@ -35,6 +35,7 @@
     }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
     h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
+
     .scratch-wrapper {
       position: relative;
       width: 300px;
@@ -46,38 +47,49 @@
       overflow: hidden;
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
+
+    /* subtle pulse when user starts scratching */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
+
+    /* stronger win pulse */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
       40%{ box-shadow: 0 0 25px 8px rgba(255,215,107,0.5); transform: translateY(-2px) scale(1.02); }
       100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
+
+    /* Message sits UNDER the canvas so it's hidden until scratched */
     #scratchMessage {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       font-size: 18px;
       color: #fff;
-      z-index: 1;
-      pointer-events: none;
+      z-index: 1;  /* under the cover */
+      pointer-events: none;  /* we enable later on win */
       white-space: nowrap;
       text-align: center;
       padding: 0 10px;
     }
+
     canvas#scratchCanvas {
       position: absolute;
       top: 0; left: 0;
       cursor: crosshair;
-      z-index: 2;
+      z-index: 2;  /* the “cover” */
     }
+
+    /* After win: allow clicks on message/button and stop canvas from eating clicks */
     .scratch-wrapper.won #scratchMessage { pointer-events: auto; }
     .scratch-wrapper.won canvas#scratchCanvas { pointer-events: none; }
+
+    /* Buttons */
     .btn {
       margin: 10px;
       padding: 12px 24px;
@@ -100,6 +112,7 @@
                   0 0 0 5px var(--focus);
     }
     .btn-small { padding: 6px 12px; font-size: 14px; margin-top: 8px; }
+
     .instructions-box {
       background-color: #192036;
       text-align: left;
@@ -111,6 +124,8 @@
       border-radius: 8px;
     }
     .instructions-box a { color: var(--muted); text-decoration: underline; }
+
+    /* Socials (images only) */
     .socials-wrap { margin:22px auto 0; max-width:560px; }
     .socials-label { font-size:14px; color:var(--muted); margin-bottom:10px; }
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
@@ -118,13 +133,15 @@
     .social a { display:inline-block; transition: transform 160ms ease, filter 160ms ease; }
     .social a:hover { transform: scale(1.08); filter: brightness(1.1); }
     .social a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .social a img[src*="discord"] { transform: scale(1.25); }
+    .social a img[src*="discord"] { transform: scale(1.25); } /* boost for padded discord asset */
     .social span { font-size:12px; color:var(--muted); line-height:1; }
+
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .btn:hover, .btn:active { transform: none; }
       .active-glow, .win-glow { animation: none; }
     }
+
     /* shimmer placeholder */
     .placeholder {
       width: 100%;
@@ -155,11 +172,11 @@
     </div>
 
     <div class="instructions-box">
-     <strong>How to redeem:</strong><br>
+      <strong>How to redeem:</strong><br>
       Visit the Rewards page<br>
       Enter your code in the “Do you have a promo code?”<br>
       Click Apply<br>
-      Need help? Our <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">support team is ready to assist you</a>
+      Need help? Our <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">support</a> team is ready to assist you
     </div>
 
     <div style="margin-top: 20px;">
@@ -167,17 +184,24 @@
     </div>
   </div>
 
+  <!-- Socials outside the container -->
   <div class="socials-wrap">
     <div class="socials-label">Join us on socials</div>
     <div class="socials">
       <div class="social">
-        <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="Discord.png" alt="Discord"/></a>
+        <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+          <img src="Discord.png" alt="Discord"/>
+        </a>
       </div>
       <div class="social">
-        <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener"><img src="instagram-new--v2.png" alt="Instagram"/></a>
+        <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+          <img src="instagram-new--v2.png" alt="Instagram"/>
+        </a>
       </div>
       <div class="social">
-        <a href="https://x.com/HypeDrop" target="_blank" rel="noopener"><img src="X_logo_2023_(white).png" alt="X"/></a>
+        <a href="https://x.com/HypeDrop" target="_blank" rel="noopener" aria-label="X" title="X">
+          <img src="X_logo_2023_(white).png" alt="X"/>
+        </a>
       </div>
     </div>
   </div>
@@ -186,35 +210,46 @@
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
     const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
+
     const messageDiv = document.getElementById("scratchMessage");
     const wrapper = document.getElementById("scratchWrapper");
     const canvas = document.getElementById("scratchCanvas");
     const ctx = canvas.getContext("2d");
+
+    // Draw cover (we erase it via destination-out)
     ctx.fillStyle = "#999";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalCompositeOperation = "destination-out";
 
     let isDrawing = false;
     let hasStartedScratch = false;
+    let pendingWin = false; // <-- new: wait to enable "won" state until user scratches
 
     function scratchAt(x, y) {
       ctx.beginPath();
-      ctx.arc(x, y, 45, 0, Math.PI * 2); // bigger brush
+      ctx.arc(x, y, 45, 0, Math.PI * 2); // bigger brush for faster reveal
       ctx.fill();
     }
+
     function startScratchAnimationOnce() {
-      if (hasStartedScratch) return;
-      hasStartedScratch = true;
-      wrapper.classList.remove("active-glow");
-      void wrapper.offsetWidth;
-      wrapper.classList.add("active-glow");
+      if (!hasStartedScratch) {
+        hasStartedScratch = true;
+        wrapper.classList.remove("active-glow");
+        void wrapper.offsetWidth;
+        wrapper.classList.add("active-glow");
+        // If the API already told us it's a win, enable the won state now
+        if (pendingWin) triggerWinAnimation();
+      }
     }
+
     function triggerWinAnimation() {
-      wrapper.classList.add("won");
+      pendingWin = false;               // consume the pending win
+      wrapper.classList.add("won");     // enables clicks on message; disables canvas clicks
       wrapper.classList.remove("win-glow");
       void wrapper.offsetWidth;
       wrapper.classList.add("win-glow");
     }
+
     // Mouse
     canvas.addEventListener("mousedown", (e) => {
       isDrawing = true;
@@ -229,6 +264,7 @@
       const rect = canvas.getBoundingClientRect();
       scratchAt(e.clientX - rect.left, e.clientY - rect.top);
     });
+
     // Touch
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
@@ -247,22 +283,30 @@
       scratchAt(t.clientX - rect.left, t.clientY - rect.top);
     }, { passive: false });
 
-    if (!code) {
-      // no code
-    } else {
-      // placeholder until API returns
+    // Fetch validation and set message under the cover
+    if (code) {
+      // Show a shimmer so there's always *something* under the cover
       messageDiv.innerHTML = `<span class="placeholder" style="width:220px;"></span>`;
+
       fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
         .then((r) => r.json())
         .then((data) => {
           if (data.status === "valid") {
             if (data.isWinner) {
+              // Prepare win text + copy button (still under cover)
               messageDiv.innerHTML = `
                 <span class="win-text">You WON! Code: <strong>${code}</strong></span>
                 <br>
                 <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
               `;
-              triggerWinAnimation();
+
+              // If user already started scratching, enable won state now; otherwise wait for first scratch
+              if (hasStartedScratch) {
+                triggerWinAnimation();
+              } else {
+                pendingWin = true; // wait until first scratch to flip to .won
+              }
+
               const btn = document.getElementById("copyBtn");
               if (btn) {
                 btn.addEventListener("click", () => {
@@ -277,6 +321,7 @@
               }
             } else {
               messageDiv.textContent = "🙁 Better luck next time!";
+              // no disabling of canvas needed for non-wins
             }
           } else {
             messageDiv.textContent = "⚠️ Invalid or redeemed code";
@@ -289,9 +334,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
