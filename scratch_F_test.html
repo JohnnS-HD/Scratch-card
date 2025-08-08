@@ -50,14 +50,14 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* glow when user first scratches (purely visual) */
+    /* glow when user first scratches (visual only) */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
-    /* win pulse (purely visual) */
+    /* win pulse (visual only) */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -73,7 +73,7 @@
       font-size: 18px;
       color: #fff;
       z-index: 1;              /* under the cover */
-      pointer-events: none;    /* clicks pass through; we click below instead */
+      pointer-events: none;    /* clicks go through; we click the row below */
       white-space: nowrap;
       text-align: center;
       padding: 0 10px;
@@ -143,8 +143,8 @@
     .socials-wrap { margin:22px auto 0; max-width:560px; }
     .socials-label { font-size:14px; color:var(--muted); margin-bottom:10px; }
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
-    .social a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .social a img[src*="discord"] { transform: scale(1.25); }
+    .socials a img { width:60px; height:auto; object-fit:contain; display:block; }
+    .socials a img[src*="discord"] { transform: scale(1.25); } /* discord asset padding fix */
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
@@ -195,7 +195,7 @@
       Visit the Rewards page<br>
       Enter your code in “Do you have a promo code?”<br>
       Click Apply<br>
-      Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support</a>
+      Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support team</a> is ready to help you
     </div>
 
     <div style="margin-top: 20px;">
@@ -215,28 +215,28 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
+    const code  = urlParams.get("code");
     const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
 
     const messageDiv = document.getElementById("scratchMessage");
-    const wrapper = document.getElementById("scratchWrapper");
-    const canvas = document.getElementById("scratchCanvas");
-    const ctx = canvas.getContext("2d");
+    const wrapper    = document.getElementById("scratchWrapper");
+    const canvas     = document.getElementById("scratchCanvas");
+    const ctx        = canvas.getContext("2d");
 
     const copyRow  = document.getElementById("copyRow");
     const copyCode = document.getElementById("copyCode");
     const copyBtn  = document.getElementById("copyBtn");
 
-    // Draw cover (we erase it via destination-out) — canvas ALWAYS accepts input
+    // ---- Draw cover and set erase mode (ORDER MATTERS) ----
+    ctx.globalCompositeOperation = "source-over";     // 1) default paint mode
     ctx.fillStyle = "#999";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);  // 2) paint the grey cover
+    ctx.globalCompositeOperation = "destination-out"; // 3) switch to erase mode for scratching ONLY
 
-    const BRUSH = 45; // fast reveal
-
+    // Brush
+    const BRUSH = 50; // fast reveal
     let isDrawing = false;
     let startedGlow = false;
-    let isWinner   = false;
     let winnerCode = "";
 
     function scratchAt(x, y) {
@@ -293,7 +293,7 @@
       scratchAt(t.clientX - r.left, t.clientY - r.top);
     }, { passive: false });
 
-    // Copy handler (always available when the row is shown)
+    // Copy handler for the row below
     copyBtn.addEventListener("click", () => {
       if (!winnerCode) return;
       navigator.clipboard.writeText(winnerCode).then(() => {
@@ -305,24 +305,22 @@
       });
     });
 
-    // Fetch prize; just swap the text UNDER the cover whenever it returns
+    // ---- Fetch prize; just swap the text UNDER the cover whenever it returns ----
     if (code) {
       fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
         .then(r => r.json())
         .then(data => {
           if (data.status === "valid") {
             if (data.isWinner) {
-              isWinner = true;
               winnerCode = code;
-              // Put win text under cover
+              // Put the win text under the cover
               messageDiv.innerHTML = `🎉 You WON! Code: <strong>${code}</strong>`;
               // Show copy row (always clickable; not under canvas)
               copyCode.textContent = code;
               copyRow.style.display = "block";
-              // Visual pulse (does not change input)
+              // Visual pulse (no input changes)
               winPulse();
             } else {
-              isWinner = false;
               messageDiv.textContent = "🙁 Better luck next time!";
               copyRow.style.display = "none";
             }
@@ -335,6 +333,10 @@
           messageDiv.textContent = "⚠️ Error validating code";
           copyRow.style.display = "none";
         });
+    } else {
+      // No code param — keep the shimmer under the cover
+      messageDiv.innerHTML = `<span class="placeholder"></span>`;
+      copyRow.style.display = "none";
     }
   </script>
 </body>
