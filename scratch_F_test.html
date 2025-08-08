@@ -240,6 +240,7 @@
   const code = urlParams.get("code");
   const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
   const messageDiv = document.getElementById("scratchMessage");
+  const wrapper = document.getElementById('scratchWrapper');
 
   const canvas = document.getElementById('scratchCanvas');
   const ctx = canvas.getContext('2d');
@@ -253,26 +254,25 @@
 
   function scratchAt(x, y) {
     ctx.beginPath();
-    ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.arc(x, y, 35, 0, Math.PI * 2); // bigger brush
     ctx.fill();
   }
 
+  // Mouse events
   canvas.addEventListener('mousedown', (e) => {
     isDrawing = true;
     const rect = canvas.getBoundingClientRect();
     scratchAt(e.clientX - rect.left, e.clientY - rect.top);
   });
-
   canvas.addEventListener('mouseup', () => isDrawing = false);
   canvas.addEventListener('mouseleave', () => isDrawing = false);
-
   canvas.addEventListener('mousemove', (e) => {
     if (!isDrawing) return;
     const rect = canvas.getBoundingClientRect();
     scratchAt(e.clientX - rect.left, e.clientY - rect.top);
   });
 
-  // Touch support
+  // Touch events
   canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
     isDrawing = true;
@@ -280,9 +280,7 @@
     const t = e.touches[0];
     scratchAt(t.clientX - rect.left, t.clientY - rect.top);
   }, { passive: false });
-
   canvas.addEventListener('touchend', () => { isDrawing = false; }, { passive: true });
-
   canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     if (!isDrawing) return;
@@ -290,6 +288,14 @@
     const t = e.touches[0];
     scratchAt(t.clientX - rect.left, t.clientY - rect.top);
   }, { passive: false });
+
+  // Win animation
+  function triggerWinAnimation() {
+    wrapper.classList.remove('win-glow'); 
+    void wrapper.offsetWidth; // restart animation
+    wrapper.classList.add('win-glow');
+    // Here you could also trigger confetti if you had it before
+  }
 
   // Validation
   if (!code) {
@@ -300,7 +306,7 @@
       .then((data) => {
         if (data.status === "valid") {
           if (data.isWinner) {
-            // Show win message with copy button
+            // Show message & copy button
             messageDiv.innerHTML = `
               🎉 You WON! Code: <strong>${code}</strong><br>
               <button id="copyBtn" style="
@@ -314,13 +320,17 @@
                 cursor:pointer;
               ">Copy Code</button>
             `;
-            document.getElementById("copyBtn").addEventListener("click", () => {
-              navigator.clipboard.writeText(code).then(() => {
-                const btn = document.getElementById("copyBtn");
-                btn.textContent = "Copied!";
-                setTimeout(() => btn.textContent = "Copy Code", 1500);
+            triggerWinAnimation();
+            // Activate copy button after adding to DOM
+            setTimeout(() => {
+              document.getElementById("copyBtn").addEventListener("click", () => {
+                navigator.clipboard.writeText(code).then(() => {
+                  const btn = document.getElementById("copyBtn");
+                  btn.textContent = "Copied!";
+                  setTimeout(() => btn.textContent = "Copy Code", 1500);
+                });
               });
-            });
+            }, 0);
           } else {
             messageDiv.textContent = "🙁 Better luck next time!";
           }
@@ -333,4 +343,5 @@
       });
   }
 </script>
+
 
