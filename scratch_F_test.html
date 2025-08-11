@@ -42,7 +42,7 @@
       position: relative;
       width: 300px;
       height: 100px;
-      margin: 18px auto 0;
+      margin: 20px auto 0;
       border: 2px dashed #444;
       background-color: var(--card);
       border-radius: 10px;
@@ -50,14 +50,14 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* glow on first scratch */
+    /* glow on first scratch (visual only) */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
-    /* win pulse */
+    /* win pulse (visual only) */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -65,12 +65,12 @@
       100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
-    /* both canvases are stacked; prize under, scratch on top */
+    /* stacked canvases */
     canvas { position: absolute; top: 0; left: 0; display:block; }
     #prizeCanvas { z-index: 1; }
     #scratchCanvas { z-index: 2; cursor: crosshair; }
 
-    /* Copy row below (never under canvas) */
+    /* Copy row below (always clickable) */
     #copyRow { display:none; margin:10px auto 0; max-width:420px; }
     .btn {
       margin: 10px;
@@ -104,14 +104,14 @@
     .socials-wrap { margin:22px auto 0; max-width:560px; }
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
     .socials a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .socials a img[src*="discord"] { transform: scale(1.25); }
+    .socials a img[src*="discord"] { transform: scale(1.25); } /* discord asset padding tweak */
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .active-glow, .win-glow { animation: none; }
     }
 
-    /* tiny confetti (purely visual, pointer-events:none) */
+    /* tiny confetti (visual only, pointer-events:none) */
     .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
     .confetti span { position:absolute; width:6px; height:10px; opacity:.9; animation:drop 900ms ease-out forwards; }
     @keyframes drop { 0%{transform:translateY(-20px) rotate(0)} 100%{transform:translateY(140px) rotate(360deg);opacity:0} }
@@ -140,7 +140,7 @@
       Visit the Rewards page<br>
       Enter your code in “Do you have a promo code?”<br>
       Click Apply<br>
-      Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support team</a> is ready to help you
+      Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support</a>
     </div>
 
     <div style="margin-top: 20px;">
@@ -157,20 +157,20 @@
   </div>
 
   <script>
-    const code  = new URLSearchParams(location.search).get("code");
-    const apiUrl = "https://script.google.com/macros/s/AKfycbzWC-0yzO4Y5gt9dFY7dn_K4sL7wVThHWJbFzYgBMaMSjDS6vINpUJaTdSY0WlOKCGqHQ/exec";
+    // ---------- CONFIG ----------
+    const apiUrl = "https://script.google.com/macros/s/AKfycbx_Oq5N0InMdH05dHVXalqHff2husNjeVcNG-gfsXzcYEUHX-XtohcDtRubaO3umWmH1Q/exec";
 
-    const wrapper = document.getElementById("scratchWrapper");
+    // ---------- DOM ----------
+    const wrapper       = document.getElementById("scratchWrapper");
     const prizeCanvas   = document.getElementById("prizeCanvas");
     const prizeCtx      = prizeCanvas.getContext("2d");
     const scratchCanvas = document.getElementById("scratchCanvas");
     const scratchCtx    = scratchCanvas.getContext("2d");
     const confettiEl    = document.getElementById("confetti");
+    const copyRow       = document.getElementById("copyRow");
+    const copyBtn       = document.getElementById("copyBtn");
 
-    const copyRow = document.getElementById("copyRow");
-    const copyBtn = document.getElementById("copyBtn");
-
-    // ------- Drawing helpers for the prize canvas (text layer) -------
+    // ---------- Helpers ----------
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
       ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
@@ -180,39 +180,6 @@
       ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
     }
 
-    // initial placeholder (so you see *something* under cover)
-    drawCenteredText(prizeCtx, "…", false);
-
-    // ------- Prepare scratch cover (always erasable; never disabled) -------
-    scratchCtx.globalCompositeOperation = "source-over";
-    scratchCtx.fillStyle = "#999";
-    scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
-    scratchCtx.globalCompositeOperation = "destination-out"; // erase with brush
-
-    const BRUSH = 50;
-    let isDrawing = false;
-    let userScratched = false;
-    let apiReady = false;
-    let isWinner = false;
-    let winnerCode = "";
-
-    function scratchAt(x,y) {
-      scratchCtx.beginPath();
-      scratchCtx.arc(x,y,BRUSH,0,Math.PI*2);
-      scratchCtx.fill();
-    }
-
-    function startOnce() {
-      if (!userScratched) {
-        userScratched = true;
-        wrapper.classList.remove("active-glow");
-        void wrapper.offsetWidth;
-        wrapper.classList.add("active-glow");
-        maybeCelebrate();
-      }
-    }
-
-    // tiny confetti burst (visual only)
     function fireConfetti() {
       confettiEl.innerHTML = "";
       const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
@@ -232,11 +199,36 @@
       void wrapper.offsetWidth;
       wrapper.classList.add("win-glow");
       fireConfetti();
-      copyRow.style.display = "block"; // button below, always clickable
+      copyRow.style.display = "block";
     }
 
-    function maybeCelebrate() {
-      if (apiReady && userScratched && isWinner) celebrate();
+    // ---------- Scratch cover (top canvas) ----------
+    scratchCtx.globalCompositeOperation = "source-over";
+    scratchCtx.fillStyle = "#999";
+    scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
+    scratchCtx.globalCompositeOperation = "destination-out"; // erase with brush
+
+    const BRUSH = 50; // faster reveal
+    let isDrawing = false;
+    let userScratched = false;
+    let apiReady = false;
+    let isWinner = false;
+    let winnerCode = "";
+
+    function scratchAt(x,y) {
+      scratchCtx.beginPath();
+      scratchCtx.arc(x,y,BRUSH,0,Math.PI*2);
+      scratchCtx.fill();
+    }
+
+    function startOnce() {
+      if (!userScratched) {
+        userScratched = true;
+        wrapper.classList.remove("active-glow");
+        void wrapper.offsetWidth;
+        wrapper.classList.add("active-glow");
+        if (apiReady && isWinner) celebrate();
+      }
     }
 
     // Mouse
@@ -272,7 +264,7 @@
       scratchAt(t.clientX - r.left, t.clientY - r.top);
     }, {passive:false});
 
-    // Copy handler
+    // Copy handler (button below)
     copyBtn.addEventListener("click", ()=>{
       if(!winnerCode) return;
       navigator.clipboard.writeText(winnerCode).then(()=>{
@@ -284,41 +276,50 @@
       });
     });
 
-    // ------- Fetch prize; update ONLY the prize canvas; never touch the scratch canvas -------
-    if (code) {
-     const params = new URLSearchParams(location.search);
-const token  = params.get('token') || '';          // one-time token in the URL
-const email  = params.get('email') || '';          // optional: capture and store
+    // ---------- Initial placeholder on prize canvas ----------
+    drawCenteredText(prizeCtx, "…", false);
 
-fetch(`${apiUrl}?draw=1&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`)
-  .then(r => r.json())
-  .then(data => {
-    if (data.status === 'ok' && data.mode === 'draw') {
-      const code = data.code;              // <-- use this everywhere
-      const isWinner = !!data.isWinner;
+    // ---------- Fetch a random code using one-time token ----------
+    const params = new URLSearchParams(location.search);
+    const token  = (params.get('token') || '').trim();
+    const email  = (params.get('email') || '').trim(); // optional – stored in sheet
 
-      // Example: plug into your scratcher flow
-      // messageCanvas: draw “🎉 You WON! Code: ${code}” or “🙁 Better luck next time!”
-      // also show your Copy Code button below or inside the card
-    } else if (data.status === 'token_used') {
-      // Show: “This link has already been used.”
-    } else if (data.status === 'token_expired') {
-      // Show: “This link has expired.”
-    } else if (data.status === 'empty') {
-      // Show: “No codes available.”
-    } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
-      // Show: “Invalid link.”
-    } else {
-      // Show: “Error fetching code.”
-    }
-  })
-  .catch(() => {
-    // Show: “Network error.”
-  });
+    const url = `${apiUrl}?draw=1&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok' && data.mode === 'draw') {
+          isWinner = !!data.isWinner;
+          winnerCode = data.code;
+          if (isWinner) {
+            drawCenteredText(prizeCtx, `🎉 You WON! Code: ${winnerCode}`, true);
+          } else {
+            drawCenteredText(prizeCtx, "🙁 Better luck next time!", false);
+          }
+          apiReady = true;
+          if (userScratched && isWinner) celebrate();
+        } else if (data.status === 'token_used') {
+          drawCenteredText(prizeCtx, "⚠️ This link was already used.", false);
+          apiReady = true;
+        } else if (data.status === 'token_expired') {
+          drawCenteredText(prizeCtx, "⚠️ This link has expired.", false);
+          apiReady = true;
+        } else if (data.status === 'empty') {
+          drawCenteredText(prizeCtx, "⚠️ No codes available.", false);
+          apiReady = true;
+        } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
+          drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
+          apiReady = true;
+        } else {
+          drawCenteredText(prizeCtx, "⚠️ Error fetching code.", false);
+          apiReady = true;
+        }
+      })
+      .catch(() => {
+        drawCenteredText(prizeCtx, "⚠️ Network error.", false);
+        apiReady = true;
+      });
   </script>
 </body>
 </html>
-
-
-
-
