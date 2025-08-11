@@ -286,37 +286,39 @@
 
     // ------- Fetch prize; update ONLY the prize canvas; never touch the scratch canvas -------
     if (code) {
-      fetch(`${apiUrl}?code=${encodeURIComponent(code)}`)
-        .then(r=>r.json())
-        .then(data=>{
-          if (data.status === "valid") {
-            if (data.isWinner) {
-              isWinner = true;
-              winnerCode = code;
-              drawCenteredText(prizeCtx, `You WON! Code: ${code}`, true);
-            } else {
-              isWinner = false;
-              drawCenteredText(prizeCtx, "🙁 Better luck next time!", false);
-            }
-          } else {
-            isWinner = false;
-            drawCenteredText(prizeCtx, "⚠️ Invalid or redeemed code", false);
-          }
-          apiReady = true;
-          maybeCelebrate(); // if user already scratched, celebrate now
-        })
-        .catch(()=>{
-          isWinner = false;
-          drawCenteredText(prizeCtx, "⚠️ Error validating code", false);
-          apiReady = true;
-        });
+     const params = new URLSearchParams(location.search);
+const token  = params.get('token') || '';          // one-time token in the URL
+const email  = params.get('email') || '';          // optional: capture and store
+
+fetch(`${apiUrl}?draw=1&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`)
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok' && data.mode === 'draw') {
+      const code = data.code;              // <-- use this everywhere
+      const isWinner = !!data.isWinner;
+
+      // Example: plug into your scratcher flow
+      // messageCanvas: draw “🎉 You WON! Code: ${code}” or “🙁 Better luck next time!”
+      // also show your Copy Code button below or inside the card
+    } else if (data.status === 'token_used') {
+      // Show: “This link has already been used.”
+    } else if (data.status === 'token_expired') {
+      // Show: “This link has expired.”
+    } else if (data.status === 'empty') {
+      // Show: “No codes available.”
+    } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
+      // Show: “Invalid link.”
     } else {
-      drawCenteredText(prizeCtx, "⚠️ No code provided.", false);
-      apiReady = true;
+      // Show: “Error fetching code.”
     }
+  })
+  .catch(() => {
+    // Show: “Network error.”
+  });
   </script>
 </body>
 </html>
+
 
 
 
