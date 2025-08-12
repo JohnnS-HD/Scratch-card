@@ -276,8 +276,23 @@
       });
     });
 
-    // ---------- Initial placeholder on prize canvas ----------
-    drawCenteredText(prizeCtx, "…", false);
+  // ---------- Initial loading spinner on prize canvas ----------
+  let loadingAngle = 0;
+  const loadingRadius = 15;
+  const loadingInterval = setInterval(() => {
+    prizeCtx.clearRect(0, 0, prizeCanvas.width, prizeCanvas.height);
+    prizeCtx.save();
+    prizeCtx.translate(prizeCanvas.width / 2, prizeCanvas.height / 2);
+    prizeCtx.rotate(loadingAngle);
+    prizeCtx.strokeStyle = "#ffffff"; // spinner color
+    prizeCtx.lineWidth = 4;
+    prizeCtx.beginPath();
+    prizeCtx.arc(0, 0, loadingRadius, 0, Math.PI * 1.5); // 3/4 circle
+    prizeCtx.stroke();
+    prizeCtx.restore();
+    loadingAngle += 0.1;
+  }, 16); // ~60fps
+
 
     // ---------- Fetch a random code using one-time token ----------
     const params = new URLSearchParams(location.search);
@@ -323,6 +338,7 @@
   </script>
 </body>
 </html>
+
 
 
 
