@@ -76,131 +76,68 @@
 
   <script>
     // ---------- CONFIG ----------
-    const apiUrl = "https://script.google.com/macros/library/d/1G7zFlSewnfvJVowhhNmNupG0CcuJ3RXZKKr_u5VdM8tHQyg4xNGQqP16/6";
-    const API_KEY = "J4!q#vB9^z@P6m$T8w*F2e&L7x%N1u^R3g+Y0h=C5a?K8d!Z6t"; // same value saved in Apps Script Script Properties
+  <script>
+  // … keep your existing code above …
 
-    // ---------- DOM ----------
-    const wrapper       = document.getElementById("scratchWrapper");
-    const prizeCanvas   = document.getElementById("prizeCanvas");
-    const prizeCtx      = prizeCanvas.getContext("2d");
-    const scratchCanvas = document.getElementById("scratchCanvas");
-    const scratchCtx    = scratchCanvas.getContext("2d");
-    const confettiEl    = document.getElementById("confetti");
-    const copyRow       = document.getElementById("copyRow");
-    const copyBtn       = document.getElementById("copyBtn");
+  const apiUrl = "https://script.google.com/macros/s/AKfycbwpNq7CLWvIQEmfs_sbt4i32IVthK5kc3DNegMdzmylgFV1IBLIoFuRmRAmZbpj5gavMA/exec";
+  const API_KEY = "J4!q#vB9^z@P6m$T8w*F2e&L7x%N1u^R3g+Y0h=C5a?K8d!Z6t"; // same as Script Properties
 
-    function drawCenteredText(ctx, text, bold=false) {
-      ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-      ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
-      ctx.fillStyle = "#fff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
-    }
+  // … keep spinner + scratch code …
 
-    function fireConfetti() {
-      confettiEl.innerHTML = "";
-      const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
-      for (let i=0;i<70;i++){
-        const s = document.createElement("span");
-        s.style.left = Math.random()*100 + "%";
-        s.style.top  = "-10px";
-        s.style.background = colors[Math.floor(Math.random()*colors.length)];
-        s.style.animationDelay = (Math.random()*0.25) + "s";
-        s.style.transform = `rotate(${Math.random()*360}deg)`;
-        confettiEl.appendChild(s);
+  const params = new URLSearchParams(location.search);
+  const token  = (params.get('token') || '').trim();
+
+  if (!token) {
+    stopSpinner();
+    drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
+  } else {
+    fetch(apiUrl, {
+      method: "POST",
+      // SIMPLE request: no custom headers, text/plain avoids preflight
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ mode: "draw", token, apiKey: API_KEY })
+    })
+    .then(async r => {
+      // If GAS throws HTML error, try to read text for debugging
+      const ct = r.headers.get("content-type") || "";
+      if (!ct.includes("application/json")) {
+        const txt = await r.text();
+        throw new Error("Non-JSON response: " + txt.slice(0, 200));
       }
-      setTimeout(()=>confettiEl.innerHTML="",1300);
-    }
-
-    function celebrate() {
-      wrapper.classList.remove("win-glow");
-      void wrapper.offsetWidth;
-      wrapper.classList.add("win-glow");
-      fireConfetti();
-      copyRow.style.display = "block";
-    }
-
-    // Spinner
-    let spinRAF = null, spinStart = null;
-    function renderSpinner(ts) {
-      if (!spinStart) spinStart = ts;
-      const t = (ts - spinStart) / 1000, angle = t * 4 * Math.PI, radius = 14, stroke = 4;
-      prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-      prizeCtx.save(); prizeCtx.translate(prizeCanvas.width/2, prizeCanvas.height/2); prizeCtx.rotate(angle);
-      prizeCtx.beginPath(); prizeCtx.lineWidth = stroke; prizeCtx.lineCap = "round"; prizeCtx.strokeStyle = "#ffffff";
-      prizeCtx.arc(0, 0, radius, 0, Math.PI * 1.6); prizeCtx.stroke(); prizeCtx.restore();
-      spinRAF = requestAnimationFrame(renderSpinner);
-    }
-    function startSpinner(){ stopSpinner(); spinStart=null; spinRAF=requestAnimationFrame(renderSpinner); }
-    function stopSpinner(){ if(spinRAF) cancelAnimationFrame(spinRAF); spinRAF=null; prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height); }
-
-    // Scratch layer
-    scratchCtx.globalCompositeOperation = "source-over";
-    scratchCtx.fillStyle = "#999";
-    scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
-    scratchCtx.globalCompositeOperation = "destination-out";
-
-    const BRUSH = 50;
-    let isDrawing=false, userScratched=false, apiReady=false, isWinner=false, winnerCode="";
-
-    function scratchAt(x,y){ scratchCtx.beginPath(); scratchCtx.arc(x,y,BRUSH,0,Math.PI*2); scratchCtx.fill(); }
-    function startOnce(){
-      if (!userScratched) {
-        userScratched = true;
-        wrapper.classList.remove("active-glow"); void wrapper.offsetWidth; wrapper.classList.add("active-glow");
-        if (apiReady && isWinner) celebrate();
-      }
-    }
-
-    // Mouse
-    scratchCanvas.addEventListener("mousedown",(e)=>{ isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
-    scratchCanvas.addEventListener("mouseup",()=>isDrawing=false);
-    scratchCanvas.addEventListener("mouseleave",()=>isDrawing=false);
-    scratchCanvas.addEventListener("mousemove",(e)=>{ if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
-    // Touch
-    scratchCanvas.addEventListener("touchstart",(e)=>{ e.preventDefault(); isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
-    scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
-    scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
-
-    copyBtn.addEventListener("click", ()=>{ if(!winnerCode) return; navigator.clipboard.writeText(winnerCode).then(()=>{ copyBtn.textContent="Copied!"; setTimeout(()=>copyBtn.textContent="Copy Code",1500); }).catch(()=>{ copyBtn.textContent="Copy failed"; setTimeout(()=>copyBtn.textContent="Copy Code",1500); }); });
-
-    // Start
-    startSpinner();
-    const params = new URLSearchParams(location.search);
-    const token  = (params.get('token') || '').trim();
-
-    if (!token) {
+      return r.json();
+    })
+    .then(data => {
       stopSpinner();
-      drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
-    } else {
-      fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
-        body: JSON.stringify({ mode: "draw", token })
-      })
-      .then(r => r.json())
-      .then(data => {
-        stopSpinner();
-        if (data.status === 'ok' && data.mode === 'draw') {
-          isWinner  = !!data.isWinner;
-          winnerCode = data.code;
-          drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
-          apiReady = true;
-          if (userScratched && isWinner) celebrate();
-        } else if (data.status === 'token_used')      { drawCenteredText(prizeCtx, "⚠️ This link was already used.", false); apiReady=true; }
-          else if (data.status === 'token_expired')   { drawCenteredText(prizeCtx, "⚠️ This link has expired.", false); apiReady=true; }
-          else if (data.status === 'empty')           { drawCenteredText(prizeCtx, "⚠️ No codes available.", false); apiReady=true; }
-          else if (data.status === 'token_invalid' || data.status === 'token_missing') {
-                                                       drawCenteredText(prizeCtx, "⚠️ Invalid link.", false); apiReady=true;
-        } else {
-          drawCenteredText(prizeCtx, "⚠️ Error fetching code.", false); apiReady=true;
-        }
-      })
-      .catch(()=>{ stopSpinner(); drawCenteredText(prizeCtx, "⚠️ Network error.", false); apiReady=true; });
-    }
-  </script>
-</body>
+      if (data.status === 'ok' && data.mode === 'draw') {
+        isWinner = !!data.isWinner;
+        winnerCode = data.code;
+        drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+        apiReady = true;
+        if (userScratched && isWinner) celebrate();
+      } else if (data.status === 'token_used') {
+        drawCenteredText(prizeCtx, "⚠️ This link was already used.", false); apiReady = true;
+      } else if (data.status === 'token_expired') {
+        drawCenteredText(prizeCtx, "⚠️ This link has expired.", false); apiReady = true;
+      } else if (data.status === 'empty') {
+        drawCenteredText(prizeCtx, "⚠️ No codes available.", false); apiReady = true;
+      } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
+        drawCenteredText(prizeCtx, "⚠️ Invalid link.", false); apiReady = true;
+      } else {
+        drawCenteredText(prizeCtx, "⚠️ Error fetching code.", false); apiReady = true;
+      }
+    })
+    .catch(err => {
+      stopSpinner();
+      // Write a tiny hint to the canvas for quick debugging
+      drawCenteredText(prizeCtx, "⚠️ Network error. (CORS/preflight)", false);
+      console.error("Redeem request failed:", err);
+      apiReady = true;
+    });
+  }
+</script>
+  
+  </body>
 </html>
+
 
 
