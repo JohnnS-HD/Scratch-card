@@ -25,8 +25,6 @@
     }
     .logo { margin-top: 40px; margin-bottom: 20px; display: inline-block; }
 
-    <style>
-    </style>
     .container {
       background-color: var(--card);
       padding: 30px;
@@ -72,7 +70,7 @@
     #prizeCanvas { z-index: 1; }
     #scratchCanvas { z-index: 2; cursor: crosshair; }
 
-    /* Copy row below (always clickable) */
+    /* Copy row below */
     #copyRow { display:none; margin:10px auto 0; max-width:420px; }
     .btn {
       margin: 10px;
@@ -160,8 +158,8 @@
 
   <script>
     // ---------- CONFIG ----------
-    const apiUrl = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";                 // NEW: your Apps Script /exec
-    const API_KEY = "2f9a0d8b1e7c4f1b98d2a6e4c5f0b7a8d1e9f3c6a2b8e7f9d0c1a5b4e6d2f0a9";                    // NEW: same as Script Properties
+    const apiUrl = "https://script.google.com/macros/s/AKfycbwpNq7CLWvIQEmfs_sbt4i32IVthK5kc3DNegMdzmylgFV1IBLIoFuRmRAmZbpj5gavMA/exec";
+    const API_KEY = "YOUR_API_KEY_HERE"; // same value as Script Properties
 
     // ---------- DOM ----------
     const wrapper       = document.getElementById("scratchWrapper");
@@ -205,20 +203,15 @@
       copyRow.style.display = "block";
     }
 
-    // ---------- Spinner on prize canvas ----------
-    let spinRAF = null;
-    let spinStart = null;
+    // ---------- Spinner ----------
+    let spinRAF = null, spinStart = null;
     function renderSpinner(ts) {
       if (!spinStart) spinStart = ts;
-      const t = (ts - spinStart) / 1000;           // seconds
-      const angle = t * 4 * Math.PI;               // speed
+      const t = (ts - spinStart) / 1000;
+      const angle = t * 4 * Math.PI;
       const radius = 14;
       const stroke = 4;
-
-      // clear frame
       prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-
-      // draw spinner arc (3/4 circle)
       prizeCtx.save();
       prizeCtx.translate(prizeCanvas.width/2, prizeCanvas.height/2);
       prizeCtx.rotate(angle);
@@ -229,87 +222,42 @@
       prizeCtx.arc(0, 0, radius, 0, Math.PI * 1.6);
       prizeCtx.stroke();
       prizeCtx.restore();
-
       spinRAF = requestAnimationFrame(renderSpinner);
     }
-    function startSpinner() {
-      stopSpinner(); // safety
-      spinStart = null;
-      spinRAF = requestAnimationFrame(renderSpinner);
-    }
-    function stopSpinner() {
-      if (spinRAF) cancelAnimationFrame(spinRAF);
-      spinRAF = null;
-      prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-    }
+    function startSpinner(){ stopSpinner(); spinStart=null; spinRAF=requestAnimationFrame(renderSpinner); }
+    function stopSpinner(){ if(spinRAF) cancelAnimationFrame(spinRAF); spinRAF=null; prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height); }
 
-    // ---------- Scratch cover (paint AFTER we have prize text) ----------
-    const BRUSH = 50; // faster reveal
-    let isDrawing = false;
-    let userScratched = false;
-    let apiReady = false;
-    let isWinner = false;
-    let winnerCode = "";
+    // ---------- Scratch (paint cover AFTER message so it doesn’t hide spinner/text) ----------
+    const BRUSH = 50;
+    let isDrawing=false, userScratched=false, apiReady=false, isWinner=false, winnerCode="";
 
-    function enableScratchCover() {                 // NEW: draw gray cover now, after text
+    function enableScratchCover() {
       scratchCtx.globalCompositeOperation = "source-over";
       scratchCtx.fillStyle = "#999";
       scratchCtx.clearRect(0,0,scratchCanvas.width, scratchCanvas.height);
       scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
-      scratchCtx.globalCompositeOperation = "destination-out"; // erase with brush
+      scratchCtx.globalCompositeOperation = "destination-out";
     }
-
-    function scratchAt(x,y) {
-      scratchCtx.beginPath();
-      scratchCtx.arc(x,y,BRUSH,0,Math.PI*2);
-      scratchCtx.fill();
-    }
-
-    function startOnce() {
+    function scratchAt(x,y){ scratchCtx.beginPath(); scratchCtx.arc(x,y,BRUSH,0,Math.PI*2); scratchCtx.fill(); }
+    function startOnce(){
       if (!userScratched) {
         userScratched = true;
-        wrapper.classList.remove("active-glow");
-        void wrapper.offsetWidth;
-        wrapper.classList.add("active-glow");
+        wrapper.classList.remove("active-glow"); void wrapper.offsetWidth; wrapper.classList.add("active-glow");
         if (apiReady && isWinner) celebrate();
       }
     }
-
     // Mouse
-    scratchCanvas.addEventListener("mousedown",(e)=>{
-      isDrawing = true;
-      startOnce();
-      const r = scratchCanvas.getBoundingClientRect();
-      scratchAt(e.clientX - r.left, e.clientY - r.top);
-    });
+    scratchCanvas.addEventListener("mousedown",(e)=>{ isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
     scratchCanvas.addEventListener("mouseup",()=>isDrawing=false);
     scratchCanvas.addEventListener("mouseleave",()=>isDrawing=false);
-    scratchCanvas.addEventListener("mousemove",(e)=>{
-      if(!isDrawing) return;
-      const r = scratchCanvas.getBoundingClientRect();
-      scratchAt(e.clientX - r.left, e.clientY - r.top);
-    });
-
+    scratchCanvas.addEventListener("mousemove",(e)=>{ if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
     // Touch
-    scratchCanvas.addEventListener("touchstart",(e)=>{
-      e.preventDefault();
-      isDrawing = true;
-      startOnce();
-      const r = scratchCanvas.getBoundingClientRect();
-      const t = e.touches[0];
-      scratchAt(t.clientX - r.left, t.clientY - r.top);
-    }, {passive:false});
+    scratchCanvas.addEventListener("touchstart",(e)=>{ e.preventDefault(); isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
     scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
-    scratchCanvas.addEventListener("touchmove",(e)=>{
-      e.preventDefault();
-      if(!isDrawing) return;
-      const r = scratchCanvas.getBoundingClientRect();
-      const t = e.touches[0];
-      scratchAt(t.clientX - r.left, t.clientY - r.top);
-    }, {passive:false});
+    scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
 
-    // Copy handler (button below)
-    copyBtn.addEventListener("click", ()=>{
+    // Copy
+    copyBtn.addEventListener("click", ()=> {
       if(!winnerCode) return;
       navigator.clipboard.writeText(winnerCode).then(()=>{
         copyBtn.textContent = "Copied!";
@@ -320,46 +268,40 @@
       });
     });
 
-    // ---------- Initial loading spinner on prize canvas ----------
-    startSpinner();
+    // ---------- Boot ----------
+    startSpinner(); // visible immediately
 
-    // ---------- Fetch a random code using one-time token ----------
     const params = new URLSearchParams(location.search);
-    const token  = (params.get('token') || '').trim();   // CHANGED: no email
+    const token  = (params.get('token') || '').trim();
 
     if (!token) {
       stopSpinner();
       drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
     } else {
-      // CHANGED: POST with text/plain, apiKey in body (no preflight)
       fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "text/plain" },     // NEW
-        body: JSON.stringify({ mode:"draw", token, apiKey: API_KEY }) // NEW
+        headers: { "Content-Type": "text/plain" },         // simple request (no preflight)
+        body: JSON.stringify({ mode:"draw", token, apiKey: API_KEY })
       })
       .then(async r => {
         const ct = r.headers.get("content-type") || "";
         const data = ct.includes("application/json") ? await r.json() : { ok:false, error: await r.text() };
-        stopSpinner(); // stop loader immediately
+        stopSpinner();
 
         if (data.ok && data.status === 'ok' && data.mode === 'draw') {
-          isWinner = !!data.isWinner;
+          isWinner   = !!data.isWinner;
           winnerCode = data.code;
-          if (isWinner) {
-            drawCenteredText(prizeCtx, `🎉 You WON! Code: ${winnerCode}`, true);
-          } else {
-            drawCenteredText(prizeCtx, "🙁 Better luck next time!", false);
-          }
+          drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
           apiReady = true;
-          enableScratchCover();                       // NEW: now hide text with cover
+          enableScratchCover(); // now hide the text so user can scratch to reveal
           if (userScratched && isWinner) celebrate();
         } else if (data.status === 'token_used') {
           drawCenteredText(prizeCtx, "⚠️ This link was already used.", false);
-          enableScratchCover();                       // NEW
+          enableScratchCover();
           apiReady = true;
         } else if (data.status === 'token_expired') {
           drawCenteredText(prizeCtx, "⚠️ This link has expired.", false);
-          enableScratchCover();                       // NEW
+          enableScratchCover();
           apiReady = true;
         } else if (data.status === 'empty') {
           drawCenteredText(prizeCtx, "⚠️ No codes available.", false);
