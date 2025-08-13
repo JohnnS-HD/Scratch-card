@@ -50,14 +50,13 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* glow on first scratch (visual only) */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
-    /* win pulse (visual only) */
+
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -65,12 +64,10 @@
       100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
-    /* stacked canvases */
     canvas { position: absolute; top: 0; left: 0; display:block; }
     #prizeCanvas { z-index: 1; }
     #scratchCanvas { z-index: 2; cursor: crosshair; }
 
-    /* Copy row below (always clickable) */
     #copyRow { display:none; margin:10px auto 0; max-width:420px; }
     .btn {
       margin: 10px;
@@ -100,18 +97,16 @@
     }
     .instructions-box a { color: var(--muted); text-decoration: underline; }
 
-    /* Socials */
     .socials-wrap { margin:22px auto 0; max-width:560px; }
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
     .socials a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .socials a img[src*="discord"] { transform: scale(1.25); } /* discord asset padding tweak */
+    .socials a img[src*="discord"] { transform: scale(1.25); }
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .active-glow, .win-glow { animation: none; }
     }
 
-    /* tiny confetti (visual only, pointer-events:none) */
     .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
     .confetti span { position:absolute; width:6px; height:10px; opacity:.9; animation:drop 900ms ease-out forwards; }
     @keyframes drop { 0%{transform:translateY(-20px) rotate(0)} 100%{transform:translateY(140px) rotate(360deg);opacity:0} }
@@ -126,7 +121,7 @@
     <h2>Scratch here and get your prize</h2>
 
     <div class="scratch-wrapper" id="scratchWrapper">
-      <canvas id="prizeCanvas" width="360" height="100" aria-hidden="true"></canvas>
+      <canvas id="prizeCanvas" width="360" height="100"></canvas>
       <canvas id="scratchCanvas" width="360" height="100"></canvas>
       <div class="confetti" id="confetti"></div>
     </div>
@@ -158,7 +153,8 @@
 
   <script>
     // ---------- CONFIG ----------
-    const apiUrl = "https://script.google.com/macros/s/AKfycbx_Oq5N0InMdH05dHVXalqHff2husNjeVcNG-gfsXzcYEUHX-XtohcDtRubaO3umWmH1Q/exec";
+    const apiUrl = "https://script.google.com/macros/s/AKfycbwpNq7CLWvIQEmfs_sbt4i32IVthK5kc3DNegMdzmylgFV1IBLIoFuRmRAmZbpj5gavMA/exec";
+    const API_KEY = "J4!q#vB9^z@P6m$T8w*F2e&L7x%N1u^R3g+Y0h=C5a?K8d!Z6t"; // same as in Apps Script Script Properties
 
     // ---------- DOM ----------
     const wrapper       = document.getElementById("scratchWrapper");
@@ -170,7 +166,6 @@
     const copyRow       = document.getElementById("copyRow");
     const copyBtn       = document.getElementById("copyBtn");
 
-    // ---------- Helpers ----------
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
       ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
@@ -202,20 +197,15 @@
       copyRow.style.display = "block";
     }
 
-    // ---------- Spinner on prize canvas ----------
     let spinRAF = null;
     let spinStart = null;
     function renderSpinner(ts) {
       if (!spinStart) spinStart = ts;
-      const t = (ts - spinStart) / 1000;           // seconds
-      const angle = t * 4 * Math.PI;               // speed
+      const t = (ts - spinStart) / 1000;
+      const angle = t * 4 * Math.PI;
       const radius = 14;
       const stroke = 4;
-
-      // clear frame
       prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-
-      // draw spinner arc (3/4 circle)
       prizeCtx.save();
       prizeCtx.translate(prizeCanvas.width/2, prizeCanvas.height/2);
       prizeCtx.rotate(angle);
@@ -226,27 +216,17 @@
       prizeCtx.arc(0, 0, radius, 0, Math.PI * 1.6);
       prizeCtx.stroke();
       prizeCtx.restore();
-
       spinRAF = requestAnimationFrame(renderSpinner);
     }
-    function startSpinner() {
-      stopSpinner(); // safety
-      spinStart = null;
-      spinRAF = requestAnimationFrame(renderSpinner);
-    }
-    function stopSpinner() {
-      if (spinRAF) cancelAnimationFrame(spinRAF);
-      spinRAF = null;
-      prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-    }
+    function startSpinner() { stopSpinner(); spinStart = null; spinRAF = requestAnimationFrame(renderSpinner); }
+    function stopSpinner() { if (spinRAF) cancelAnimationFrame(spinRAF); spinRAF = null; prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height); }
 
-    // ---------- Scratch cover (top canvas) ----------
     scratchCtx.globalCompositeOperation = "source-over";
     scratchCtx.fillStyle = "#999";
     scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
-    scratchCtx.globalCompositeOperation = "destination-out"; // erase with brush
+    scratchCtx.globalCompositeOperation = "destination-out";
 
-    const BRUSH = 50; // faster reveal
+    const BRUSH = 50;
     let isDrawing = false;
     let userScratched = false;
     let apiReady = false;
@@ -269,65 +249,42 @@
       }
     }
 
-    // Mouse
-    scratchCanvas.addEventListener("mousedown",(e)=>{
-      isDrawing = true;
-      startOnce();
-      const r = scratchCanvas.getBoundingClientRect();
-      scratchAt(e.clientX - r.left, e.clientY - r.top);
-    });
+    scratchCanvas.addEventListener("mousedown",(e)=>{ isDrawing = true; startOnce(); const r = scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX - r.left, e.clientY - r.top); });
     scratchCanvas.addEventListener("mouseup",()=>isDrawing=false);
     scratchCanvas.addEventListener("mouseleave",()=>isDrawing=false);
-    scratchCanvas.addEventListener("mousemove",(e)=>{
-      if(!isDrawing) return;
-      const r = scratchCanvas.getBoundingClientRect();
-      scratchAt(e.clientX - r.left, e.clientY - r.top);
-    });
+    scratchCanvas.addEventListener("mousemove",(e)=>{ if(!isDrawing) return; const r = scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX - r.left, e.clientY - r.top); });
 
-    // Touch
-    scratchCanvas.addEventListener("touchstart",(e)=>{
-      e.preventDefault();
-      isDrawing = true;
-      startOnce();
-      const r = scratchCanvas.getBoundingClientRect();
-      const t = e.touches[0];
-      scratchAt(t.clientX - r.left, t.clientY - r.top);
-    }, {passive:false});
+    scratchCanvas.addEventListener("touchstart",(e)=>{ e.preventDefault(); isDrawing = true; startOnce(); const r = scratchCanvas.getBoundingClientRect(); const t = e.touches[0]; scratchAt(t.clientX - r.left, t.clientY - r.top); }, {passive:false});
     scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
-    scratchCanvas.addEventListener("touchmove",(e)=>{
-      e.preventDefault();
-      if(!isDrawing) return;
-      const r = scratchCanvas.getBoundingClientRect();
-      const t = e.touches[0];
-      scratchAt(t.clientX - r.left, t.clientY - r.top);
-    }, {passive:false});
+    scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r = scratchCanvas.getBoundingClientRect(); const t = e.touches[0]; scratchAt(t.clientX - r.left, t.clientY - r.top); }, {passive:false});
 
-    // Copy handler (button below)
-    copyBtn.addEventListener("click", ()=>{
-      if(!winnerCode) return;
-      navigator.clipboard.writeText(winnerCode).then(()=>{
-        copyBtn.textContent = "Copied!";
-        setTimeout(()=>copyBtn.textContent="Copy Code",1500);
-      }).catch(()=>{
-        copyBtn.textContent = "Copy failed";
-        setTimeout(()=>copyBtn.textContent="Copy Code",1500);
-      });
-    });
+    copyBtn.addEventListener("click", ()=>{ if(!winnerCode) return; navigator.clipboard.writeText(winnerCode).then(()=>{ copyBtn.textContent = "Copied!"; setTimeout(()=>copyBtn.textContent="Copy Code",1500); }).catch(()=>{ copyBtn.textContent = "Copy failed"; setTimeout(()=>copyBtn.textContent="Copy Code",1500); }); });
 
-    // ---------- Initial loading spinner on prize canvas ----------
     startSpinner();
 
-    // ---------- Fetch a random code using one-time token ----------
     const params = new URLSearchParams(location.search);
     const token  = (params.get('token') || '').trim();
-    const email  = (params.get('email') || '').trim(); // optional – stored in sheet
+    const email  = (params.get('email') || '').trim();
 
-    const url = `${apiUrl}?draw=1&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-
-    fetch(url)
+    if (!token) {
+      stopSpinner();
+      drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
+    } else {
+      fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY
+        },
+        body: JSON.stringify({
+          mode: "draw",
+          token,
+          email
+        })
+      })
       .then(r => r.json())
       .then(data => {
-        stopSpinner(); // stop loader immediately
+        stopSpinner();
         if (data.status === 'ok' && data.mode === 'draw') {
           isWinner = !!data.isWinner;
           winnerCode = data.code;
@@ -360,6 +317,7 @@
         drawCenteredText(prizeCtx, "⚠️ Network error.", false);
         apiReady = true;
       });
+    }
   </script>
 </body>
 </html>
