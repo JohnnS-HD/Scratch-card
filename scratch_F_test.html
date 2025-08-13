@@ -1,146 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scratch & Win</title>
+<style>
+  :root { --bg:#171e31; --card:#1f2643; --ink:#fff; --muted:#ccc; --btn:#494f66; }
+  *{box-sizing:border-box} body{background:var(--bg);color:var(--ink);font-family:Arial;margin:0;padding:24px;text-align:center}
+  .container{background:var(--card);max-width:420px;margin:0 auto;padding:24px;border-radius:12px}
+  .scratch{position:relative;width:360px;height:100px;margin:16px auto;border:2px dashed #444;border-radius:10px;overflow:hidden}
+  canvas{position:absolute;top:0;left:0;display:block}
+  #prize{z-index:1} #cover{z-index:2;cursor:crosshair}
+  #copyRow{display:none;margin-top:8px}
+  .btn{background:var(--btn);color:#fff;border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h2>Scratch here and get your prize</h2>
+
+    <div class="scratch" id="wrap">
+      <canvas id="prize" width="360" height="100"></canvas>
+      <canvas id="cover" width="360" height="100"></canvas>
+    </div>
+
+    <div id="copyRow"><button id="copyBtn" class="btn" type="button">Copy Code</button></div>
+    <div><button class="btn" onclick="location.href='https://www.hypedrop.com/na/rewards'">Go to Rewards</button></div>
+  </div>
+
 <script>
-  // ---------- CONFIG ----------
-  const apiUrl = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
-  const API_KEY = "2f9a0d8b1e7c4f1b98d2a6e4c5f0b7a8d1e9f3c6a2b8e7f9d0c1a5b4e6d2f0a9"; // must match Script Properties
+/* ===== CONFIG (set your values) ===== */
+const API_URL = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
+const API_KEY = "2f9a0d8b1e7c4f1b98d2a6e4c5f0b7a8d1e9f3c6a2b8e7f9d0c1a5b4e6d2f0a9"; // EXACTLY the same as Script Properties
+/* =================================== */
 
-  // ---------- DOM ----------
-  const wrapper       = document.getElementById("scratchWrapper");
-  const prizeCanvas   = document.getElementById("prizeCanvas");
-  const prizeCtx      = prizeCanvas.getContext("2d");
-  const scratchCanvas = document.getElementById("scratchCanvas");
-  const scratchCtx    = scratchCanvas.getContext("2d");
-  const confettiEl    = document.getElementById("confetti");
-  const copyRow       = document.getElementById("copyRow");
-  const copyBtn       = document.getElementById("copyBtn");
+const prize = document.getElementById('prize');
+const pctx  = prize.getContext('2d');
+const cover = document.getElementById('cover');
+const cctx  = cover.getContext('2d');
+const copyRow = document.getElementById('copyRow');
+const copyBtn = document.getElementById('copyBtn');
 
-  // ---------- Helpers ----------
-  function drawCenteredText(ctx, text, bold=false) {
-    ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-    ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
-  }
-  function fireConfetti() {
-    confettiEl.innerHTML = "";
-    const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
-    for (let i=0;i<70;i++){
-      const s = document.createElement("span");
-      s.style.left = Math.random()*100 + "%";
-      s.style.top  = "-10px";
-      s.style.background = colors[Math.floor(Math.random()*colors.length)];
-      s.style.animationDelay = (Math.random()*0.25) + "s";
-      s.style.transform = `rotate(${Math.random()*360}deg)`;
-      confettiEl.appendChild(s);
-    }
-    setTimeout(()=>confettiEl.innerHTML="",1300);
-  }
-  function celebrate() {
-    wrapper.classList.remove("win-glow"); void wrapper.offsetWidth;
-    wrapper.classList.add("win-glow");
-    fireConfetti();
-    copyRow.style.display = "block";
-  }
+let isWinner=false, winnerCode="", userScratched=false;
 
-  // ---------- Spinner on prize canvas (visible now) ----------
-  let spinRAF = null, spinStart = null;
-  function renderSpinner(ts) {
-    if (!spinStart) spinStart = ts;
-    const t = (ts - spinStart) / 1000, angle = t * 4 * Math.PI, radius = 14, stroke = 4;
-    prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-    prizeCtx.save(); prizeCtx.translate(prizeCanvas.width/2, prizeCanvas.height/2); prizeCtx.rotate(angle);
-    prizeCtx.beginPath(); prizeCtx.lineWidth = stroke; prizeCtx.lineCap = "round"; prizeCtx.strokeStyle = "#ffffff";
-    prizeCtx.arc(0, 0, radius, 0, Math.PI * 1.6); prizeCtx.stroke(); prizeCtx.restore();
-    spinRAF = requestAnimationFrame(renderSpinner);
-  }
-  function startSpinner(){ stopSpinner(); spinStart=null; spinRAF=requestAnimationFrame(renderSpinner); }
-  function stopSpinner(){ if(spinRAF) cancelAnimationFrame(spinRAF); spinRAF=null; prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height); }
+/* ——— debug helper: show any error on the canvas ——— */
+function show(msg){
+  try{
+    pctx.clearRect(0,0,prize.width,prize.height);
+    pctx.font='400 16px Arial'; pctx.fillStyle='#fff';
+    pctx.textAlign='center'; pctx.textBaseline='middle';
+    pctx.fillText(String(msg).slice(0,260), prize.width/2, prize.height/2);
+  }catch(e){}
+}
+window.addEventListener('error', e=>show('JS error: ' + (e.error?.message||e.message)));
+window.addEventListener('unhandledrejection', e=>show('Promise error: ' + (e.reason?.message||e.reason)));
 
-  // ---------- Scratch layer (paint AFTER we have a message) ----------
-  const BRUSH = 50;
-  let isDrawing=false, userScratched=false, apiReady=false, isWinner=false, winnerCode="";
+/* spinner */
+let raf=null, t0=null;
+function spin(ts){
+  if(!t0) t0=ts;
+  const t=(ts-t0)/1000, angle=t*4*Math.PI, R=14, W=4;
+  pctx.clearRect(0,0,prize.width,prize.height);
+  pctx.save(); pctx.translate(prize.width/2, prize.height/2); pctx.rotate(angle);
+  pctx.beginPath(); pctx.lineWidth=W; pctx.lineCap='round'; pctx.strokeStyle='#fff';
+  pctx.arc(0,0,R,0,Math.PI*1.6); pctx.stroke(); pctx.restore();
+  raf=requestAnimationFrame(spin);
+}
+function startSpin(){ if(raf) cancelAnimationFrame(raf); t0=null; raf=requestAnimationFrame(spin); }
+function stopSpin(){ if(raf) cancelAnimationFrame(raf); raf=null; pctx.clearRect(0,0,prize.width,prize.height); }
 
-  function enableScratchLayer() {
-    // Paint the gray cover now and switch to erase mode
-    scratchCtx.globalCompositeOperation = "source-over";
-    scratchCtx.fillStyle = "#999";
-    scratchCtx.clearRect(0,0,scratchCanvas.width, scratchCanvas.height);
-    scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
-    scratchCtx.globalCompositeOperation = "destination-out";
+/* enable scratch AFTER message is drawn */
+function enableScratch(){
+  cctx.globalCompositeOperation='source-over';
+  cctx.fillStyle='#999';
+  cctx.clearRect(0,0,cover.width,cover.height);
+  cctx.fillRect(0,0,cover.width,cover.height);
+  cctx.globalCompositeOperation='destination-out';
+  const BRUSH=50; let drawing=false;
 
-    // Pointer handlers
-    function scratchAt(x,y){ scratchCtx.beginPath(); scratchCtx.arc(x,y,BRUSH,0,Math.PI*2); scratchCtx.fill(); }
-    function startOnce(){
-      if (!userScratched) {
-        userScratched = true;
-        wrapper.classList.remove("active-glow"); void wrapper.offsetWidth; wrapper.classList.add("active-glow");
-        if (apiReady && isWinner) celebrate();
-      }
-    }
-    // Mouse
-    scratchCanvas.addEventListener("mousedown",(e)=>{ isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
-    scratchCanvas.addEventListener("mouseup",()=>isDrawing=false);
-    scratchCanvas.addEventListener("mouseleave",()=>isDrawing=false);
-    scratchCanvas.addEventListener("mousemove",(e)=>{ if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
-    // Touch
-    scratchCanvas.addEventListener("touchstart",(e)=>{ e.preventDefault(); isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
-    scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
-    scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
-  }
+  function scratchAt(x,y){ cctx.beginPath(); cctx.arc(x,y,BRUSH,0,Math.PI*2); cctx.fill(); }
+  function startOnce(){ if(!userScratched){ userScratched=true; if(isWinner) { copyRow.style.display='block'; } } }
 
-  // Copy handler
-  copyBtn.addEventListener("click", ()=>{ if(!winnerCode) return; navigator.clipboard.writeText(winnerCode).then(()=>{ copyBtn.textContent="Copied!"; setTimeout(()=>copyBtn.textContent="Copy Code",1500); }).catch(()=>{ copyBtn.textContent="Copy failed"; setTimeout(()=>copyBtn.textContent="Copy Code",1500); }); });
+  cover.addEventListener('mousedown',e=>{drawing=true;startOnce(); const r=cover.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top);});
+  cover.addEventListener('mouseup',()=>drawing=false);
+  cover.addEventListener('mouseleave',()=>drawing=false);
+  cover.addEventListener('mousemove',e=>{ if(!drawing) return; const r=cover.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
 
-  // ---------- Boot ----------
-  // Show spinner visibly (no gray cover yet)
-  startSpinner();
+  cover.addEventListener('touchstart',e=>{ e.preventDefault(); drawing=true; startOnce(); const r=cover.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
+  cover.addEventListener('touchend',()=>{ drawing=false; }, {passive:true});
+  cover.addEventListener('touchmove',e=>{ e.preventDefault(); if(!drawing) return; const r=cover.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
+}
 
-  const params = new URLSearchParams(location.search);
-  const token  = (params.get('token') || '').trim();
+/* copy */
+copyBtn.addEventListener('click', ()=>{ if(!winnerCode) return; navigator.clipboard.writeText(winnerCode).then(()=>{ copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy Code',1200); });});
 
-  if (!token) {
-    stopSpinner();
-    drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
-  } else {
-    // Simple CORS request (no preflight): text/plain + apiKey in body
-    fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ mode: "draw", token, apiKey: API_KEY })
-    })
-    .then(async r => {
-      const ct = r.headers.get("content-type") || "";
-      const data = ct.includes("application/json") ? await r.json() : { ok:false, error: await r.text() };
-      stopSpinner();
+/* boot */
+(function init(){
+  show('Loading…'); // visible text while spinner starts
+  startSpin();
 
-      if (data.ok && data.status === 'ok' && data.mode === 'draw') {
-        isWinner   = !!data.isWinner;
-        winnerCode = data.code;
-        drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
-        apiReady = true;
-        // Now that the message is drawn, enable the scratch layer so it hides it
-        enableScratchLayer();
-      } else if (data.status === 'token_used') {
-        drawCenteredText(prizeCtx, "⚠️ This link was already used.", false);
-        enableScratchLayer();
-      } else if (data.status === 'token_expired') {
-        drawCenteredText(prizeCtx, "⚠️ This link has expired.", false);
-        enableScratchLayer();
-      } else if (data.status === 'empty') {
-        drawCenteredText(prizeCtx, "⚠️ No codes available.", false);
-      } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
-        drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
-      } else {
-        drawCenteredText(prizeCtx, "⚠️ Error fetching code.", false);
-        console.error("API error:", data);
-      }
-    })
-    .catch(err => {
-      stopSpinner();
-      drawCenteredText(prizeCtx, "⚠️ Network error.", false);
-      console.error("Fetch error:", err);
-    });
-  }
+  const token = (new URLSearchParams(location.search).get('token')||'').trim();
+  if(!token){ stopSpin(); show('⚠️ Invalid link (missing token).'); return; }
+
+  fetch(API_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain' }, // simple request (no preflight)
+    body: JSON.stringify({ mode:'draw', token, apiKey: API_KEY })
+  })
+  .then(async r=>{
+    const ct=r.headers.get('content-type')||'';
+    const data = ct.includes('application/json') ? await r.json() : { ok:false, error:(await r.text()) };
+    stopSpin();
+
+    if(data.ok && data.status==='ok' && data.mode==='draw'){
+      isWinner = !!data.isWinner;
+      winnerCode = data.code;
+      show(isWinner ? `🎉 You WON! Code: ${winnerCode}` : '🙁 Better luck next time!');
+      enableScratch();
+    } else if (data.status==='token_used')    { show('⚠️ This link was already used.'); enableScratch(); }
+      else if (data.status==='token_expired') { show('⚠️ This link has expired.'); enableScratch(); }
+      else if (data.status==='empty')         { show('⚠️ No codes available.'); }
+      else if (data.status==='token_invalid' || data.status==='token_missing') { show('⚠️ Invalid link.'); }
+      else { show('⚠️ Error: ' + (data.error||'unexpected')); console.error('API:',data); }
+  })
+  .catch(err=>{ stopSpin(); show('⚠️ Network error: '+(err.message||err)); console.error(err); });
+})();
 </script>
-
+</body>
+</html>
