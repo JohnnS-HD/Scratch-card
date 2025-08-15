@@ -51,14 +51,14 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* glow on first scratch (visual only) */
+    /* glow on first scratch */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
-    /* win pulse (visual only) */
+    /* win pulse */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -66,12 +66,10 @@
       100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
-    /* stacked canvases */
     canvas { position: absolute; top: 0; left: 0; display:block; }
     #prizeCanvas { z-index: 1; }
     #scratchCanvas { z-index: 2; cursor: crosshair; }
 
-    /* Copy row below */
     #copyRow { display:none; margin:10px auto 0; max-width:420px; }
     .btn {
       margin: 10px;
@@ -101,24 +99,39 @@
     }
     .instructions-box a { color: var(--muted); text-decoration: underline; }
 
-    /* Socials */
     .socials-wrap { margin:22px auto 0; max-width:560px; }
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
     .socials a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .socials a img[src*="discord"] { transform: scale(1.25); } /* discord asset padding tweak */
+    .socials a img[src*="discord"] { transform: scale(1.25); }
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .active-glow, .win-glow { animation: none; }
     }
 
-    /* tiny confetti (visual only, pointer-events:none) */
     .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
     .confetti span { position:absolute; width:6px; height:10px; opacity:.9; animation:drop 900ms ease-out forwards; }
     @keyframes drop { 0%{transform:translateY(-20px) rotate(0)} 100%{transform:translateY(140px) rotate(360deg);opacity:0} }
+
+    /* Spinner */
+    #loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top: 4px solid var(--focus);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 
-  <!-- EARLY FETCH: starts before body renders -->
+  <!-- Early Fetch -->
   <script>
     (function () {
       const apiUrl  = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
@@ -152,8 +165,11 @@
     <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
   </a>
 
-  <!-- Hide until API result is ready -->
-  <div class="container" id="app" style="visibility:hidden;">
+  <!-- Loader before card -->
+  <div id="loader"><div class="spinner"></div></div>
+
+  <!-- Card hidden until ready -->
+  <div class="container" id="app" style="display:none;">
     <h2>Scratch here and get your prize</h2>
 
     <div class="scratch-wrapper" id="scratchWrapper">
@@ -188,7 +204,6 @@
   </div>
 
   <script>
-    // ---------- DOM ----------
     const wrapper       = document.getElementById("scratchWrapper");
     const prizeCanvas   = document.getElementById("prizeCanvas");
     const prizeCtx      = prizeCanvas.getContext("2d");
@@ -198,8 +213,8 @@
     const copyRow       = document.getElementById("copyRow");
     const copyBtn       = document.getElementById("copyBtn");
     const app           = document.getElementById("app");
+    const loader        = document.getElementById("loader");
 
-    // ---------- Helpers ----------
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
       ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
@@ -231,7 +246,6 @@
       copyRow.style.display = "block";
     }
 
-    // ---------- Scratch cover (paint AFTER message) ----------
     const BRUSH = 50;
     let isDrawing=false, userScratched=false, apiReady=false, isWinner=false, winnerCode="";
 
@@ -250,17 +264,15 @@
         if (apiReady && isWinner) celebrate();
       }
     }
-    // Mouse
+
     scratchCanvas.addEventListener("mousedown",(e)=>{ isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
     scratchCanvas.addEventListener("mouseup",()=>isDrawing=false);
     scratchCanvas.addEventListener("mouseleave",()=>isDrawing=false);
     scratchCanvas.addEventListener("mousemove",(e)=>{ if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
-    // Touch
     scratchCanvas.addEventListener("touchstart",(e)=>{ e.preventDefault(); isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
     scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
     scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
 
-    // Copy
     copyBtn.addEventListener("click", ()=> {
       if(!winnerCode) return;
       navigator.clipboard.writeText(winnerCode).then(()=>{
@@ -272,7 +284,6 @@
       });
     });
 
-    // ---------- Status helper ----------
     function showStatus(kind){
       const map = {
         token_used:    "⚠️ This link was already used.",
@@ -287,7 +298,6 @@
       drawCenteredText(prizeCtx, map[kind] || map.default);
     }
 
-    // ---------- Boot (await early fetch, then reveal UI) ----------
     (async function init(){
       const res = await (window.__scratchEarlyFetch || Promise.resolve({kind:'earlyError', value:'default'}));
 
@@ -298,29 +308,22 @@
           winnerCode = data.code;
           drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
           apiReady = true;
-          enableScratchCover(); // now hide text so user can scratch to reveal
+          enableScratchCover();
           if (userScratched && isWinner) celebrate();
-        } else if (data.status === 'token_used') {
-          showStatus('token_used'); enableScratchCover(); apiReady = true;
-        } else if (data.status === 'token_expired') {
-          showStatus('token_expired'); enableScratchCover(); apiReady = true;
-        } else if (data.status === 'empty') {
-          showStatus('empty'); apiReady = true;
-        } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
-          showStatus('token_invalid'); apiReady = true;
-        } else if (data.error === 'Unauthorized') {
-          showStatus('unauthorized'); apiReady = true;
+        } else if (data.status) {
+          showStatus(data.status);
+          enableScratchCover();
+          apiReady = true;
         } else {
           console.error('API error:', data);
           showStatus('default'); apiReady = true;
         }
       } else {
-        // earlyError from the head script
         showStatus(res.value || 'default');
       }
 
-      // finally show the card
-      app.style.visibility = 'visible';
+      loader.style.display = "none";
+      app.style.display = "block";
     })();
   </script>
 </body>
