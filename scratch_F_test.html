@@ -108,26 +108,32 @@
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
     .socials img { width:60px !important; height:auto !important; object-fit:contain; display:block; }
 
-    /* Fresh drops grid (new) */
-    .fresh-drops {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap:wrap;
-    }
-    .fresh-drops a { display:inline-block; }
-    .fresh-drops img {
-      width:180px;        /* uniform size inside the card */
-      height:auto;
-      border-radius:10px;
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-    .fresh-drops img:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
+/* Force two items side-by-side */
+.fresh-drops{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: center;
+  justify-items: center;
+  margin-top: 10px;
+}
+.fresh-drops a{ display:block; }
+.fresh-drops img{
+  width: 100%;
+  max-width: 200px;   /* tweak size as you like */
+  height: auto;
+  border-radius: 10px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.fresh-drops img:hover{
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,.3);
+}
 
-    @media (prefers-reduced-motion: reduce) { .btn { transition: none; } .active-glow, .win-glow { animation: none; } }
+/* On very narrow screens, stack them */
+@media (max-width: 420px){
+  .fresh-drops{ grid-template-columns: 1fr; }
+}
 
     /* confetti */
     .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
@@ -371,8 +377,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
