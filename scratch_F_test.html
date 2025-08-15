@@ -26,6 +26,18 @@
     }
     .logo { margin-top: 40px; margin-bottom: 20px; display: inline-block; }
 
+    /* === NEW: two-column page layout (keeps your original container intact) === */
+    .page-grid{
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      gap:24px;
+      flex-wrap:wrap;            /* stacks on small screens */
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    /* Your original card container (unchanged) */
     .container {
       background-color: var(--card);
       padding: 30px;
@@ -101,30 +113,18 @@
     }
     .instructions-box a { color: var(--muted); text-decoration: underline; }
 
-    /* NEW: side-by-side columns wrapper */
-    .info-columns {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      margin-top: 30px;
-      flex-wrap: wrap;          /* stacks on small screens */
-    }
-    .info-columns .instructions-box {
-      flex: 1;
-      min-width: 220px;         /* keeps nice layout before stacking */
-    }
+    /* Right-side column uses same “card” look */
+    .side-container{ max-width: 420px; }
+
     .info-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
       color: var(--ink);
       margin-bottom: 6px;
     }
-    .info-title .icon {
-      font-size: 18px;
-      line-height: 1;
-    }
+    .info-title .icon { font-size:18px; line-height:1; }
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
@@ -185,42 +185,43 @@
   <!-- Loader shown while fetching -->
   <div id="loader"><div class="spinner"></div></div>
 
-  <!-- Card hidden until ready -->
-  <div class="container" id="app" style="display:none;">
-    <h2>Scratch here and get your prize</h2>
+  <!-- Two-column layout: left = your original card, right = new column -->
+  <div class="page-grid" style="display:none;" id="grid">
+    <!-- LEFT: your original container (unchanged content) -->
+    <div class="container" id="app">
+      <h2>Scratch here and get your prize</h2>
 
-    <div class="scratch-wrapper" id="scratchWrapper">
-      <canvas id="prizeCanvas" width="360" height="100" aria-hidden="true"></canvas>
-      <canvas id="scratchCanvas" width="360" height="100"></canvas>
-      <div class="confetti" id="confetti"></div>
-    </div>
+      <div class="scratch-wrapper" id="scratchWrapper">
+        <canvas id="prizeCanvas" width="360" height="100" aria-hidden="true"></canvas>
+        <canvas id="scratchCanvas" width="360" height="100"></canvas>
+        <div class="confetti" id="confetti"></div>
+      </div>
 
-    <div id="copyRow">
-      <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
-    </div>
+      <div id="copyRow">
+        <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
+      </div>
 
-    <!-- TWO-COLUMN INFO ROW -->
-    <div class="info-columns">
-      <!-- Left column: How to redeem -->
       <div class="instructions-box">
-        <div class="info-title"><span class="icon">🛠</span><span>How to redeem</span></div>
+        <strong>How to redeem:</strong><br>
         Visit the Rewards page<br>
         Enter your code in “Do you have a promo code?”<br>
         Click Apply<br>
         Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support team</a> is ready to help you!
       </div>
 
-      <!-- Right column: Possible prizes -->
-      <div class="instructions-box">
-        <div class="info-title"><span class="icon">🎁</span><span>Possible Prizes</span></div>
-        Promo codes for $1, $3, $5, and $10.<br>
-        <em>In the future, we’ll also add top-up bonuses and items!</em>
+      <div style="margin-top: 20px;">
+        <button class="btn" onclick="window.location.href='https://www.hypedrop.com/na/rewards'">Go to Rewards</button>
       </div>
     </div>
 
-    <div style="margin-top: 20px;">
-      <button class="btn" onclick="window.location.href='https://www.hypedrop.com/na/rewards'">Go to Rewards</button>
-    </div>
+    <!-- RIGHT: new column (same card look, just info) -->
+    <aside class="container side-container" aria-label="Possible prizes">
+      <div class="info-title"><span class="icon">🎁</span><span>Possible Prizes</span></div>
+      <div class="instructions-box" style="margin-top: 0;">
+        Promo codes for $1, $3, $5, and $10.<br>
+        <em>In the future, we’ll also add top-up bonuses and items!</em>
+      </div>
+    </aside>
   </div>
 
   <div class="socials-wrap">
@@ -241,6 +242,7 @@
     const copyRow       = document.getElementById("copyRow");
     const copyBtn       = document.getElementById("copyBtn");
     const app           = document.getElementById("app");
+    const grid          = document.getElementById("grid");
     const loader        = document.getElementById("loader");
 
     function drawCenteredText(ctx, text, bold=false) {
@@ -350,9 +352,9 @@
         showStatus(res.value || 'default');
       }
 
-      // Swap loader → card
+      // Swap loader → grid (left card + right column)
       loader.style.display = "none";
-      app.style.display = "block";
+      grid.style.display = "flex";
     })();
   </script>
 </body>
