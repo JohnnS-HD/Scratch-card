@@ -51,14 +51,14 @@
       transition: box-shadow 300ms ease, transform 300ms ease;
     }
 
-    /* glow on first scratch */
+    /* glow on first scratch (visual only) */
     .active-glow { animation: activePulse 900ms ease-out 1; }
     @keyframes activePulse {
       0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
       40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
       100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
     }
-    /* win pulse */
+    /* win pulse (visual only) */
     .win-glow { animation: winPulse 1200ms ease-out 2; }
     @keyframes winPulse {
       0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
@@ -66,10 +66,12 @@
       100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
     }
 
+    /* stacked canvases */
     canvas { position: absolute; top: 0; left: 0; display:block; }
     #prizeCanvas { z-index: 1; }
     #scratchCanvas { z-index: 2; cursor: crosshair; }
 
+    /* Copy row below */
     #copyRow { display:none; margin:10px auto 0; max-width:420px; }
     .btn {
       margin: 10px;
@@ -99,39 +101,54 @@
     }
     .instructions-box a { color: var(--muted); text-decoration: underline; }
 
-    .socials-wrap { margin:22px auto 0; max-width:560px; }
-    .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
-    .socials a img { width:60px; height:auto; object-fit:contain; display:block; }
-    .socials a img[src*="discord"] { transform: scale(1.25); }
+    /* NEW: side-by-side columns wrapper */
+    .info-columns {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 30px;
+      flex-wrap: wrap;          /* stacks on small screens */
+    }
+    .info-columns .instructions-box {
+      flex: 1;
+      min-width: 220px;         /* keeps nice layout before stacking */
+    }
+    .info-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .info-title .icon {
+      font-size: 18px;
+      line-height: 1;
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .btn { transition: none; }
       .active-glow, .win-glow { animation: none; }
     }
 
+    /* tiny confetti (visual only, pointer-events:none) */
     .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
     .confetti span { position:absolute; width:6px; height:10px; opacity:.9; animation:drop 900ms ease-out forwards; }
     @keyframes drop { 0%{transform:translateY(-20px) rotate(0)} 100%{transform:translateY(140px) rotate(360deg);opacity:0} }
 
-    /* Spinner */
-    #loader {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 200px;
-    }
+    /* Loader */
+    #loader { display:flex; justify-content:center; align-items:center; height:200px; }
     .spinner {
       border: 4px solid rgba(255,255,255,0.2);
       border-top: 4px solid var(--focus);
       border-radius: 50%;
-      width: 36px;
-      height: 36px;
+      width: 36px; height: 36px;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 
-  <!-- Early Fetch -->
+  <!-- Early Fetch (runs before body renders) -->
   <script>
     (function () {
       const apiUrl  = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
@@ -165,7 +182,7 @@
     <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
   </a>
 
-  <!-- Loader before card -->
+  <!-- Loader shown while fetching -->
   <div id="loader"><div class="spinner"></div></div>
 
   <!-- Card hidden until ready -->
@@ -182,12 +199,23 @@
       <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
     </div>
 
-    <div class="instructions-box">
-      <strong>How to redeem:</strong><br>
-      Visit the Rewards page<br>
-      Enter your code in “Do you have a promo code?”<br>
-      Click Apply<br>
-      Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support team</a> is ready to help you!
+    <!-- TWO-COLUMN INFO ROW -->
+    <div class="info-columns">
+      <!-- Left column: How to redeem -->
+      <div class="instructions-box">
+        <div class="info-title"><span class="icon">🛠</span><span>How to redeem</span></div>
+        Visit the Rewards page<br>
+        Enter your code in “Do you have a promo code?”<br>
+        Click Apply<br>
+        Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support team</a> is ready to help you!
+      </div>
+
+      <!-- Right column: Possible prizes -->
+      <div class="instructions-box">
+        <div class="info-title"><span class="icon">🎁</span><span>Possible Prizes</span></div>
+        Promo codes for $1, $3, $5, and $10.<br>
+        <em>In the future, we’ll also add top-up bonuses and items!</em>
+      </div>
     </div>
 
     <div style="margin-top: 20px;">
@@ -322,6 +350,7 @@
         showStatus(res.value || 'default');
       }
 
+      // Swap loader → card
       loader.style.display = "none";
       app.style.display = "block";
     })();
