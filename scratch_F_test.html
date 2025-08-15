@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scratch & Win</title>
+
   <style>
     :root {
       --bg:#171e31;
@@ -116,13 +117,43 @@
     .confetti span { position:absolute; width:6px; height:10px; opacity:.9; animation:drop 900ms ease-out forwards; }
     @keyframes drop { 0%{transform:translateY(-20px) rotate(0)} 100%{transform:translateY(140px) rotate(360deg);opacity:0} }
   </style>
+
+  <!-- EARLY FETCH: starts before body renders -->
+  <script>
+    (function () {
+      const apiUrl  = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
+      const API_KEY = "2f9a0d8b1e7c4f1b98d2a6e4c5f0b7a8d1e9f3c6a2b8e7f9d0c1a5b4e6d2f0a9";
+
+      const params = new URLSearchParams(location.search);
+      const token  = (params.get('token') || '').trim();
+
+      window.__scratchEarlyFetch = (async () => {
+        if (!token) return { kind: 'earlyError', value: 'token_missing' };
+        try {
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ mode: 'draw', token, apiKey: API_KEY })
+          });
+          const ct = res.headers.get('content-type') || '';
+          const data = ct.includes('application/json') ? await res.json()
+                                                       : { ok:false, error: await res.text() };
+          return { kind: 'data', value: data };
+        } catch (e) {
+          return { kind: 'earlyError', value: 'network' };
+        }
+      })();
+    })();
+  </script>
 </head>
+
 <body>
   <a href="https://www.hypedrop.com/" target="_blank" rel="noopener">
     <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
   </a>
 
-  <div class="container">
+  <!-- Hide until API result is ready -->
+  <div class="container" id="app" style="visibility:hidden;">
     <h2>Scratch here and get your prize</h2>
 
     <div class="scratch-wrapper" id="scratchWrapper">
@@ -157,10 +188,6 @@
   </div>
 
   <script>
-    // ---------- CONFIG ----------
-    const apiUrl = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
-    const API_KEY = "2f9a0d8b1e7c4f1b98d2a6e4c5f0b7a8d1e9f3c6a2b8e7f9d0c1a5b4e6d2f0a9"; // same value as Script Properties
-
     // ---------- DOM ----------
     const wrapper       = document.getElementById("scratchWrapper");
     const prizeCanvas   = document.getElementById("prizeCanvas");
@@ -170,6 +197,7 @@
     const confettiEl    = document.getElementById("confetti");
     const copyRow       = document.getElementById("copyRow");
     const copyBtn       = document.getElementById("copyBtn");
+    const app           = document.getElementById("app");
 
     // ---------- Helpers ----------
     function drawCenteredText(ctx, text, bold=false) {
@@ -203,31 +231,7 @@
       copyRow.style.display = "block";
     }
 
-    // ---------- Spinner ----------
-    let spinRAF = null, spinStart = null;
-    function renderSpinner(ts) {
-      if (!spinStart) spinStart = ts;
-      const t = (ts - spinStart) / 1000;
-      const angle = t * 4 * Math.PI;
-      const radius = 14;
-      const stroke = 4;
-      prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height);
-      prizeCtx.save();
-      prizeCtx.translate(prizeCanvas.width/2, prizeCanvas.height/2);
-      prizeCtx.rotate(angle);
-      prizeCtx.beginPath();
-      prizeCtx.lineWidth = stroke;
-      prizeCtx.lineCap = "round";
-      prizeCtx.strokeStyle = "#ffffff";
-      prizeCtx.arc(0, 0, radius, 0, Math.PI * 1.6);
-      prizeCtx.stroke();
-      prizeCtx.restore();
-      spinRAF = requestAnimationFrame(renderSpinner);
-    }
-    function startSpinner(){ stopSpinner(); spinStart=null; spinRAF=requestAnimationFrame(renderSpinner); }
-    function stopSpinner(){ if(spinRAF) cancelAnimationFrame(spinRAF); spinRAF=null; prizeCtx.clearRect(0,0,prizeCanvas.width,prizeCanvas.height); }
-
-    // ---------- Scratch (paint cover AFTER message so it doesn’t hide spinner/text) ----------
+    // ---------- Scratch cover (paint AFTER message) ----------
     const BRUSH = 50;
     let isDrawing=false, userScratched=false, apiReady=false, isWinner=false, winnerCode="";
 
@@ -268,59 +272,56 @@
       });
     });
 
-    // ---------- Boot ----------
-    startSpinner(); // visible immediately
+    // ---------- Status helper ----------
+    function showStatus(kind){
+      const map = {
+        token_used:    "⚠️ This link was already used.",
+        token_expired: "⚠️ This link has expired.",
+        token_invalid: "⚠️ Invalid link.",
+        token_missing: "⚠️ Invalid link.",
+        empty:         "⚠️ No codes available.",
+        unauthorized:  "⚠️ Unauthorized request.",
+        network:       "⚠️ Network error.",
+        default:       "⚠️ Error fetching code."
+      };
+      drawCenteredText(prizeCtx, map[kind] || map.default);
+    }
 
-    const params = new URLSearchParams(location.search);
-    const token  = (params.get('token') || '').trim();
+    // ---------- Boot (await early fetch, then reveal UI) ----------
+    (async function init(){
+      const res = await (window.__scratchEarlyFetch || Promise.resolve({kind:'earlyError', value:'default'}));
 
-    if (!token) {
-      stopSpinner();
-      drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
-    } else {
-      fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },         // simple request (no preflight)
-        body: JSON.stringify({ mode:"draw", token, apiKey: API_KEY })
-      })
-      .then(async r => {
-        const ct = r.headers.get("content-type") || "";
-        const data = ct.includes("application/json") ? await r.json() : { ok:false, error: await r.text() };
-        stopSpinner();
-
+      if (res.kind === 'data') {
+        const data = res.value;
         if (data.ok && data.status === 'ok' && data.mode === 'draw') {
           isWinner   = !!data.isWinner;
           winnerCode = data.code;
           drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
           apiReady = true;
-          enableScratchCover(); // now hide the text so user can scratch to reveal
+          enableScratchCover(); // now hide text so user can scratch to reveal
           if (userScratched && isWinner) celebrate();
         } else if (data.status === 'token_used') {
-          drawCenteredText(prizeCtx, "⚠️ This link was already used.", false);
-          enableScratchCover();
-          apiReady = true;
+          showStatus('token_used'); enableScratchCover(); apiReady = true;
         } else if (data.status === 'token_expired') {
-          drawCenteredText(prizeCtx, "⚠️ This link has expired.", false);
-          enableScratchCover();
-          apiReady = true;
+          showStatus('token_expired'); enableScratchCover(); apiReady = true;
         } else if (data.status === 'empty') {
-          drawCenteredText(prizeCtx, "⚠️ No codes available.", false);
-          apiReady = true;
+          showStatus('empty'); apiReady = true;
         } else if (data.status === 'token_invalid' || data.status === 'token_missing') {
-          drawCenteredText(prizeCtx, "⚠️ Invalid link.", false);
-          apiReady = true;
+          showStatus('token_invalid'); apiReady = true;
+        } else if (data.error === 'Unauthorized') {
+          showStatus('unauthorized'); apiReady = true;
         } else {
-          drawCenteredText(prizeCtx, "⚠️ Error fetching code.", false);
-          apiReady = true;
-          console.error("API error:", data);
+          console.error('API error:', data);
+          showStatus('default'); apiReady = true;
         }
-      })
-      .catch(() => {
-        stopSpinner();
-        drawCenteredText(prizeCtx, "⚠️ Network error.", false);
-        apiReady = true;
-      });
-    }
+      } else {
+        // earlyError from the head script
+        showStatus(res.value || 'default');
+      }
+
+      // finally show the card
+      app.style.visibility = 'visible';
+    })();
   </script>
 </body>
 </html>
