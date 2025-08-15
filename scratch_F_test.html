@@ -1,110 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scratch & Win</title>
+
   <style>
-    :root {
-      --bg: #171e31;
-      --card: #1f2643;
-      --ink: #fff;
-      --muted: #ccc;
-      --btn: #494f66;
-      --focus: #7a86ff;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg:#171e31; --card:#1f2643; --ink:#fff; --muted:#ccc; --btn:#494f66; --focus:#7a86ff; }
+    * { box-sizing: border-box; }
     body {
       background-color: var(--bg);
       font-family: Arial, sans-serif;
+      text-align: center;
       color: var(--ink);
-      padding: 20px;
+      margin: 0;
+      padding: 0 12px 40px;
+      overflow-x: hidden;
     }
-    .logo {
-      display: block;
+    .logo { margin-top: 40px; margin-bottom: 20px; display: inline-block; }
+
+    /* Two-card row (desktop) that stacks on small screens */
+    .page-grid{
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      gap:24px;
+      flex-wrap:wrap;          /* stacks on mobile */
+      max-width: 980px;
       margin: 0 auto 20px;
-      max-width: 200px;
     }
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 20px;
-      max-width: 900px;
-      margin: auto;
-    }
+
+    /* Card look (kept exactly) */
     .container {
       background-color: var(--card);
-      padding: 20px;
-      border-radius: 10px;
+      padding: 30px;
+      max-width: 420px;
+      width: 100%;
+      border-radius: 12px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+      animation: fadeInUp 420ms ease both;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 15px;
-    }
+    @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
+
+    h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
+
     .scratch-wrapper {
+      position: relative;
+      width: 360px;
+      height: 100px;
+      margin: 20px auto 0;
       border: 2px dashed #444;
       background-color: var(--card);
-      height: 100px;
-      margin: 20px 0;
+      border-radius: 10px;
+      overflow: hidden;
+      transition: box-shadow 300ms ease, transform 300ms ease;
     }
+
+    /* visual pulses */
+    .active-glow { animation: activePulse 900ms ease-out 1; }
+    @keyframes activePulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
+      40%{ box-shadow: 0 0 18px 6px rgba(255,255,255,0.15); }
+      100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+    .win-glow { animation: winPulse 1200ms ease-out 2; }
+    @keyframes winPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,215,107,0.6); transform: translateY(0) scale(1); }
+      40%{ box-shadow: 0 0 25px 8px rgba(255,215,107,0.5); transform: translateY(-2px) scale(1.02); }
+      100%{ box-shadow: 0 0 0 0 rgba(255,215,107,0); transform: translateY(0) scale(1); }
+    }
+
+    /* canvases */
+    canvas { position: absolute; top: 0; left: 0; display:block; }
+    #prizeCanvas { z-index: 1; }
+    #scratchCanvas { z-index: 2; cursor: crosshair; }
+
+    /* buttons */
+    #copyRow { display:none; margin:10px auto 0; max-width:420px; }
+    .btn {
+      margin: 10px; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px;
+      cursor: pointer; background: var(--btn); color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+    }
+    .btn:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 18px rgba(0,0,0,0.35); filter: brightness(1.05); }
+    .btn-small { padding: 6px 12px; font-size: 14px; }
+
+    /* info boxes */
     .instructions-box {
       background-color: #192036;
+      text-align: left;
       padding: 15px;
-      border-radius: 8px;
-      margin-top: 10px;
+      margin-top: 30px;
       font-size: 14px;
       line-height: 1.4;
-    }
-    .info-title {
-      display: flex;
-      align-items: center;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .info-title .icon {
-      margin-right: 8px;
-    }
-    .btn {
-      display: inline-block;
-      background-color: var(--btn);
-      color: var(--ink);
-      padding: 10px 20px;
-      border: none;
+      color: var(--muted);
       border-radius: 8px;
-      text-decoration: none;
-      margin-top: 15px;
-      text-align: center;
     }
-    .socials-wrap {
-      margin-top: 20px;
+    .instructions-box a { color: var(--muted); text-decoration: underline; }
+    .info-title{ display:flex; align-items:center; gap:8px; font-weight:700; color: var(--ink); margin-bottom:6px; }
+    .info-title .icon{ font-size:18px; line-height:1; }
+
+    /* socials — fixed size */
+    .socials-wrap { margin:22px auto 0; max-width:560px; }
+    .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
+    .socials img { width:60px !important; height:auto !important; object-fit:contain; display:block; }
+
+    @media (prefers-reduced-motion: reduce) { .btn { transition: none; } .active-glow, .win-glow { animation: none; } }
+
+    /* confetti */
+    .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
+    .confetti span { position:absolute; width:6px; height:10px; opacity:.9; animation:drop 900ms ease-out forwards; }
+    @keyframes drop { 0%{transform:translateY(-20px) rotate(0)} 100%{transform:translateY(140px) rotate(360deg);opacity:0} }
+
+    /* loader */
+    #loader { display:flex; justify-content:center; align-items:center; height:200px; }
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top: 4px solid var(--focus);
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      animation: spin 0.8s linear infinite;
     }
-    .socials {
-      display: flex;
-      gap: 20px;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-    }
-    .socials img {
-      width: 60px;
-      height: auto;
-      object-fit: contain;
-      display: block;
-    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
+
+  <!-- Early Fetch (runs before body renders) -->
+  <script>
+    (function () {
+      const apiUrl  = "https://script.google.com/macros/s/AKfycbwwzCiQTUppQN7xsuFnsEWE46kZD4vVMuHrOqIIZQEW0dESsXmiqcPeVliYDrjsuB3BdQ/exec";
+      const API_KEY = "2f9a0d8b1e7c4f1b98d2a6e4c5f0b7a8d1e9f3c6a2b8e7f9d0c1a5b4e6d2f0a9";
+
+      const params = new URLSearchParams(location.search);
+      const token  = (params.get('token') || '').trim();
+
+      window.__scratchEarlyFetch = (async () => {
+        if (!token) return { kind: 'earlyError', value: 'token_missing' };
+        try {
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ mode: 'draw', token, apiKey: API_KEY })
+          });
+          const ct = res.headers.get('content-type') || '';
+          const data = ct.includes('application/json') ? await res.json()
+                                                       : { ok:false, error: await res.text() };
+          return { kind: 'data', value: data };
+        } catch {
+          return { kind: 'earlyError', value: 'network' };
+        }
+      })();
+    })();
+  </script>
 </head>
+
 <body>
+  <a href="https://www.hypedrop.com/" target="_blank" rel="noopener">
+    <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
+  </a>
 
-  <img src="logo.png" alt="Hypedrop" class="logo">
+  <!-- Loader while fetching -->
+  <div id="loader"><div class="spinner"></div></div>
 
-  <div class="main-grid">
+  <!-- TWO CARDS ONLY: left (original), right (prizes with socials underneath) -->
+  <div class="page-grid" id="grid" style="display:none;">
 
-    <!-- LEFT: Scratch card and redeem instructions -->
-    <section class="container">
+    <!-- LEFT: Original scratch card + instructions -->
+    <div class="container" id="app">
       <h2>Scratch here and get your prize</h2>
-      <div class="scratch-wrapper" id="scratch-area">
-        <!-- Canvas or scratch logic will go here -->
+
+      <div class="scratch-wrapper" id="scratchWrapper">
+        <canvas id="prizeCanvas" width="360" height="100" aria-hidden="true"></canvas>
+        <canvas id="scratchCanvas" width="360" height="100"></canvas>
+        <div class="confetti" id="confetti"></div>
       </div>
+
+      <div id="copyRow">
+        <button id="copyBtn" class="btn btn-small" type="button">Copy Code</button>
+      </div>
+
       <div class="instructions-box">
         <strong>How to redeem:</strong><br>
         Visit the Rewards page<br>
@@ -112,17 +186,22 @@
         Click Apply<br>
         Need help? <a href="https://www.hypedrop.com/support" target="_blank" rel="noopener">Support team</a> is ready to help you!
       </div>
-      <a href="https://www.hypedrop.com/rewards" target="_blank" class="btn">Go to Rewards</a>
-    </section>
 
-    <!-- RIGHT: Possible prizes + socials -->
-    <aside class="container">
+      <div style="margin-top: 20px;">
+        <button class="btn" onclick="window.location.href='https://www.hypedrop.com/na/rewards'">Go to Rewards</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: Possible Prizes + socials BELOW it -->
+    <aside class="container" aria-label="Possible prizes">
       <div class="info-title"><span class="icon">🎁</span><span>Possible Prizes</span></div>
       <div class="instructions-box" style="margin-top: 0;">
         Promo codes for $1, $3, $5, and $10.<br>
         <em>In the future, we’ll also add top-up bonuses and items!</em>
       </div>
-      <div class="socials-wrap">
+
+      <!-- Socials moved inside this right card -->
+      <div class="socials-wrap" style="margin-top: 20px;">
         <div class="socials">
           <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="Discord.png" alt="Discord"></a>
           <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener"><img src="instagram-new--v2.png" alt="Instagram"></a>
@@ -133,6 +212,129 @@
 
   </div>
 
+  <script>
+    // DOM
+    const wrapper       = document.getElementById("scratchWrapper");
+    const prizeCanvas   = document.getElementById("prizeCanvas");
+    const prizeCtx      = prizeCanvas.getContext("2d");
+    const scratchCanvas = document.getElementById("scratchCanvas");
+    const scratchCtx    = scratchCanvas.getContext("2d");
+    const confettiEl    = document.getElementById("confetti");
+    const copyRow       = document.getElementById("copyRow");
+    const copyBtn       = document.getElementById("copyBtn");
+    const grid          = document.getElementById("grid");
+    const loader        = document.getElementById("loader");
+
+    // Helpers
+    function drawCenteredText(ctx, text, bold=false) {
+      ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+      ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
+    }
+    function fireConfetti() {
+      confettiEl.innerHTML = "";
+      const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
+      for (let i=0;i<70;i++){
+        const s = document.createElement("span");
+        s.style.left = Math.random()*100 + "%";
+        s.style.top  = "-10px";
+        s.style.background = colors[Math.floor(Math.random()*colors.length)];
+        s.style.animationDelay = (Math.random()*0.25) + "s";
+        confettiEl.appendChild(s);
+      }
+      setTimeout(()=>confettiEl.innerHTML="",1300);
+    }
+    function celebrate() {
+      wrapper.classList.remove("win-glow");
+      void wrapper.offsetWidth;
+      wrapper.classList.add("win-glow");
+      fireConfetti();
+      copyRow.style.display = "block";
+    }
+
+    // Scratch
+    const BRUSH = 50;
+    let isDrawing=false, userScratched=false, apiReady=false, isWinner=false, winnerCode="";
+    function enableScratchCover() {
+      scratchCtx.globalCompositeOperation = "source-over";
+      scratchCtx.fillStyle = "#999";
+      scratchCtx.clearRect(0,0,scratchCanvas.width, scratchCanvas.height);
+      scratchCtx.fillRect(0,0,scratchCanvas.width, scratchCanvas.height);
+      scratchCtx.globalCompositeOperation = "destination-out";
+    }
+    function scratchAt(x,y){ scratchCtx.beginPath(); scratchCtx.arc(x,y,BRUSH,0,Math.PI*2); scratchCtx.fill(); }
+    function startOnce(){
+      if (!userScratched) {
+        userScratched = true;
+        wrapper.classList.remove("active-glow"); void wrapper.offsetWidth; wrapper.classList.add("active-glow");
+        if (apiReady && isWinner) celebrate();
+      }
+    }
+    scratchCanvas.addEventListener("mousedown",(e)=>{ isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
+    scratchCanvas.addEventListener("mouseup",()=>isDrawing=false);
+    scratchCanvas.addEventListener("mouseleave",()=>isDrawing=false);
+    scratchCanvas.addEventListener("mousemove",(e)=>{ if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); scratchAt(e.clientX-r.left,e.clientY-r.top); });
+    scratchCanvas.addEventListener("touchstart",(e)=>{ e.preventDefault(); isDrawing=true; startOnce(); const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
+    scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
+    scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
+
+    copyBtn.addEventListener("click", ()=> {
+      if(!winnerCode) return;
+      navigator.clipboard.writeText(winnerCode).then(()=>{
+        copyBtn.textContent = "Copied!";
+        setTimeout(()=>copyBtn.textContent="Copy Code",1500);
+      }).catch(()=>{
+        copyBtn.textContent = "Copy failed";
+        setTimeout(()=>copyBtn.textContent="Copy Code",1500);
+      });
+    });
+
+    function showStatus(kind){
+      const map = {
+        token_used:    "⚠️ This link was already used.",
+        token_expired: "⚠️ This link has expired.",
+        token_invalid: "⚠️ Invalid link.",
+        token_missing: "⚠️ Invalid link.",
+        empty:         "⚠️ No codes available.",
+        unauthorized:  "⚠️ Unauthorized request.",
+        network:       "⚠️ Network error.",
+        default:       "⚠️ Error fetching code."
+      };
+      drawCenteredText(prizeCtx, map[kind] || map.default);
+    }
+
+    // Show grid after early fetch
+    (async function init(){
+      const res = await (window.__scratchEarlyFetch || Promise.resolve({kind:'earlyError', value:'default'}));
+
+      if (res.kind === 'data') {
+        const data = res.value;
+        if (data.ok && data.status === 'ok' && data.mode === 'draw') {
+          isWinner   = !!data.isWinner;
+          winnerCode = data.code;
+          drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+          apiReady = true;
+          enableScratchCover();
+          if (userScratched && isWinner) celebrate();
+        } else if (data.status) {
+          showStatus(data.status);
+          enableScratchCover();
+          apiReady = true;
+        } else {
+          console.error('API error:', data);
+          showStatus('default'); apiReady = true;
+        }
+      } else {
+        showStatus(res.value || 'default');
+      }
+
+      // swap loader → 2-card grid
+      loader.style.display = "none";
+      grid.style.display   = "flex";
+    })();
+  </script>
 </body>
 </html>
-  
