@@ -23,7 +23,7 @@
     .page-grid{
       display:flex;
       justify-content:center;
-      align-items:flex-start;
+      align-items:stretch;       /* <-- make both columns equal height */
       gap:24px;
       flex-wrap:wrap;
       max-width: 980px;
@@ -39,6 +39,8 @@
       border-radius: 12px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
       animation: fadeInUp 420ms ease both;
+      display:flex;              /* <-- allow stretching without changing look */
+      flex-direction:column;     /* content stacks as before */
     }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
 
@@ -212,7 +214,7 @@
       </div>
     </div>
 
-    <!-- RIGHT: Possible Prizes + Fresh Drops (images) + socials -->
+    <!-- RIGHT: Possible Prizes + Fresh Drops + socials -->
     <aside class="container" aria-label="Possible prizes">
       <div class="info-title"><span class="icon">🎁</span><span>Possible Prizes</span></div>
       <div class="instructions-box" style="margin-top: 0;">
@@ -227,7 +229,7 @@
           <img src="HypeDrop_duck-duck-goose.avif" alt="Duck Duck Goose">
         </a>
         <a href="https://www.hypedrop.com/boxes/view/na/poker-dreams" target="_blank" rel="noopener">
-          <img src="HypeDrop_poker-dreams.png" alt="Poker Dreams">
+          <img src="HypeDrop_poker-dreams.webp" alt="Poker Dreams">
         </a>
         <a href="https://www.hypedrop.com/boxes/view/na/ibiza-final-boss" target="_blank" rel="noopener">
           <img src="HypeDrop_FINL-BOSS.avif" alt="Ibiza Final Boss">
@@ -237,7 +239,7 @@
       <!-- Socials still under the right card -->
       <div class="socials-wrap" style="margin-top: 20px;">
         <div class="socials">
-          <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="Discord.png" alt="Discord"></a>
+          <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="discord-icon-43736.png" alt="Discord"></a>
           <a href="https://www.instagram.com/hypedropcom/" target="_blank" rel="noopener"><img src="instagram-new--v2.png" alt="Instagram"></a>
           <a href="https://x.com/HypeDrop" target="_blank" rel="noopener"><img src="X_logo_2023_(white).png" alt="X"></a>
         </div>
