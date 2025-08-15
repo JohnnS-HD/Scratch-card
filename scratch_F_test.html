@@ -30,7 +30,7 @@
       margin: 0 auto 20px;
     }
 
-    /* Card look (your original) */
+    /* Card look */
     .container {
       background-color: var(--card);
       padding: 30px;
@@ -162,7 +162,7 @@
   <!-- Loader while fetching -->
   <div id="loader"><div class="spinner"></div></div>
 
-  <!-- TWO CARDS ONLY: left (original), right (prizes + socials underneath) -->
+  <!-- TWO CARDS: left (original), right (prizes + socials underneath) -->
   <div class="page-grid" id="grid" style="display:none;">
 
     <!-- LEFT: Original scratch card + instructions -->
@@ -281,7 +281,6 @@
     scratchCanvas.addEventListener("touchend",()=>{ isDrawing=false; }, {passive:true});
     scratchCanvas.addEventListener("touchmove",(e)=>{ e.preventDefault(); if(!isDrawing) return; const r=scratchCanvas.getBoundingClientRect(); const t=e.touches[0]; scratchAt(t.clientX-r.left,t.clientY-r.top); }, {passive:false});
 
-    copyBtn addEventListener? // (keep it clean)
     copyBtn.addEventListener("click", ()=> {
       if(!winnerCode) return;
       navigator.clipboard.writeText(winnerCode).then(()=>{
