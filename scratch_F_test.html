@@ -23,7 +23,7 @@
     .page-grid{
       display:flex;
       justify-content:center;
-      align-items:stretch;       /* <-- make both columns equal height */
+      align-items:stretch;       /* make both columns equal height */
       gap:24px;
       flex-wrap:wrap;
       max-width: 980px;
@@ -39,14 +39,14 @@
       border-radius: 12px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
       animation: fadeInUp 420ms ease both;
-      display:flex;              /* <-- allow stretching without changing look */
-      flex-direction:column;     /* content stacks as before */
+      display:flex;
+      flex-direction:column;
     }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
 
     h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
 
-    /* ⭐ responsive scratch area: same look, fluid width on phone */
+    /* responsive scratch area */
     .scratch-wrapper {
       position: relative;
       width: 100%;
@@ -111,7 +111,7 @@
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
     .socials img { width:60px !important; height:auto !important; object-fit:contain; display:block; }
 
-    /* Force two items side-by-side */
+    /* fresh drops: 2 side-by-side */
     .fresh-drops{
       display: grid !important;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -123,7 +123,7 @@
     .fresh-drops a{ display:block; }
     .fresh-drops img{
       width: 100%;
-      max-width: 200px;   /* tweak size as you like */
+      max-width: 200px;
       height: auto;
       border-radius: 10px;
       transition: transform .2s ease, box-shadow .2s ease;
@@ -132,8 +132,6 @@
       transform: scale(1.05);
       box-shadow: 0 4px 10px rgba(0,0,0,.3);
     }
-
-    /* On very narrow screens, stack them */
     @media (max-width: 420px){
       .fresh-drops{ grid-template-columns: 1fr; }
     }
@@ -230,7 +228,7 @@
         <em>Stay tuned, more prizes will be available soon!</em>
       </div>
 
-      <!-- NEW: Fresh drops images under Possible Prizes -->
+      <!-- Fresh drops -->
       <div class="info-title" style="margin-top:16px;">🔥 Fresh drops for you!</div>
       <div class="fresh-drops">
         <a href="https://www.hypedrop.com/boxes/view/na/duck-duck-goose" target="_blank" rel="noopener">
@@ -241,7 +239,7 @@
         </a>
       </div>
 
-      <!-- Socials still under the right card -->
+      <!-- Socials -->
       <div class="socials-wrap" style="margin-top: 20px;">
         <div class="socials">
           <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="discord-icon-43736.png" alt="Discord"></a>
@@ -266,7 +264,7 @@
     const grid          = document.getElementById("grid");
     const loader        = document.getElementById("loader");
 
-    // Helpers
+    // Draw helper
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
       ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
@@ -275,6 +273,16 @@
       ctx.textBaseline = "middle";
       ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
     }
+
+    // --- prize text state (so we can redraw after resize) ---
+    let currentPrizeText = "";
+    let currentPrizeBold = false;
+    function setPrizeText(text, bold=false) {
+      currentPrizeText = text || "";
+      currentPrizeBold = !!bold;
+      drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
+    }
+
     function fireConfetti() {
       confettiEl.innerHTML = "";
       const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
@@ -344,10 +352,10 @@
         network:       "⚠️ Network error.",
         default:       "⚠️ Error fetching code."
       };
-      drawCenteredText(prizeCtx, map[kind] || map.default);
+      setPrizeText(map[kind] || map.default, false);
     }
 
-    /* ⭐ Responsive canvas sizing (keeps aspect, crisp on Retina) */
+    /* Responsive canvas sizing (keeps aspect, crisp on Retina) */
     (function responsiveScratch(){
       const BASE_W = 360, BASE_H = 100, AR = BASE_W / BASE_H;
 
@@ -368,6 +376,9 @@
         setCanvasSize(prizeCanvas,   w, h);
         setCanvasSize(scratchCanvas, w, h);
         enableScratchCover();                         // repaint the cover after resize
+        if (currentPrizeText) {
+          drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold); // redraw last message
+        }
       }
 
       const ro = new ResizeObserver(layoutScratch);
@@ -385,7 +396,7 @@
         if (data.ok && data.status === 'ok' && data.mode === 'draw') {
           isWinner   = !!data.isWinner;
           winnerCode = data.code;
-          drawCenteredText(prizeCtx, isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+          setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
           apiReady = true;
           enableScratchCover();
           if (userScratched && isWinner) celebrate();
