@@ -23,7 +23,7 @@
     .page-grid{
       display:flex;
       justify-content:center;
-      align-items:stretch;       /* <-- make both columns equal height */
+      align-items:stretch;
       gap:24px;
       flex-wrap:wrap;
       max-width: 980px;
@@ -39,19 +39,19 @@
       border-radius: 12px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
       animation: fadeInUp 420ms ease both;
-      display:flex;              /* <-- allow stretching without changing look */
-      flex-direction:column;     /* content stacks as before */
+      display:flex;
+      flex-direction:column;
     }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
 
     h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
 
-    /* ✅ Responsive width on phone, same look on desktop */
+    /* Scratch area */
     .scratch-wrapper {
       position: relative;
       width: 100%;
-      max-width: 360px;          /* keep your desktop size */
-      height: 100px;             /* keep your original height */
+      max-width: 360px;
+      height: 100px;
       margin: 20px auto 0;
       border: 2px dashed #444;
       background-color: var(--card);
@@ -122,7 +122,7 @@
     .fresh-drops a{ display:block; }
     .fresh-drops img{
       width: 100%;
-      max-width: 200px;   /* tweak size as you like */
+      max-width: 200px;
       height: auto;
       border-radius: 10px;
       transition: transform .2s ease, box-shadow .2s ease;
@@ -152,14 +152,15 @@
     }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
+    /* fine print */
     .fine-print{
-  color: var(--muted);
-  font-size: 12px;
-  font-style: italic;
-  max-width: 980px;   /* aligns with the two-card grid width */
-  margin: 8px auto 0; /* centered under the grid */
-  line-height: 1.4;
-}
+      color: var(--muted);
+      font-size: 12px;
+      font-style: italic;
+      max-width: 980px;
+      margin: 8px auto 0;
+      line-height: 1.4;
+    }
   </style>
 
   <!-- Early Fetch (runs before body renders) -->
@@ -257,12 +258,14 @@
     </aside>
 
   </div>
-<p id="expiryNote" class="fine-print" style="display:none;" aria-live="polite">
-  This link is valid for one opening only. If you close this page, it will expire.
-</p>
+
+  <p id="expiryNote" class="fine-print" style="display:none;" aria-live="polite">
+    This link is valid for one opening only. If you close this page, it will expire.
+  </p>
+
   <script>
     // DOM
-    const expiryNote = document.getElementById("expiryNote");
+    const expiryNote    = document.getElementById("expiryNote");
     const wrapper       = document.getElementById("scratchWrapper");
     const prizeCanvas   = document.getElementById("prizeCanvas");
     const prizeCtx      = prizeCanvas.getContext("2d");
@@ -273,6 +276,7 @@
     const copyBtn       = document.getElementById("copyBtn");
     const grid          = document.getElementById("grid");
     const loader        = document.getElementById("loader");
+
     // Draw helper
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
@@ -283,7 +287,7 @@
       ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
     }
 
-    // Remember last message (so we can redraw after resize/orientation)
+    // Remember last message
     let currentPrizeText = "";
     let currentPrizeBold = false;
     function setPrizeText(text, bold=false) {
@@ -370,36 +374,59 @@
 
     // ✅ Make canvases match the wrapper’s width (fixes mobile overflow)
     function sizeScratchCanvases() {
-      // wrapper is responsive: width up to 360px, height fixed at 100px
       const w = Math.round(wrapper.clientWidth || 360);
-      const h = 100; // keep your original height
-      // set both the internal bitmap and CSS size so drawing & pointer coords match
+      const h = 100;
       [prizeCanvas, scratchCanvas].forEach(c => {
         c.width = w;  c.height = h;
         c.style.width = w + 'px';
         c.style.height = h + 'px';
       });
-      // repaint cover and redraw message
       enableScratchCover();
       redrawPrizeText();
     }
 
-    // --- Safe getter with timeout so UI never hangs ---
-    async function getEarlyData(timeoutMs = 8000) {
+    // ---- Apply API payload to UI (winner/loser/errors)
+    function handleApiPayload(data){
+      if (data && data.ok && data.status === 'ok' && data.mode === 'draw') {
+        isWinner   = !!data.isWinner;
+        winnerCode = data.code;
+        setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+        apiReady = true;
+        if (userScratched && isWinner) celebrate();
+      } else if (data && data.status) {
+        showStatus(data.status);
+        apiReady = true;
+      } else {
+        console.error('API error payload:', data);
+        showStatus('default'); apiReady = true;
+      }
+    }
+
+    // --- Safe getter with timeout that ALSO listens for late results ---
+    async function getEarlyData(timeoutMs = 15000) {
       const p = (window.__scratchEarlyFetch instanceof Promise)
         ? window.__scratchEarlyFetch
         : Promise.resolve({ kind: 'earlyError', value: 'default' });
 
-      const timeout = new Promise(resolve =>
-        setTimeout(() => resolve({ kind: 'earlyError', value: 'network_timeout' }), timeoutMs)
-      );
+      // guard: never throw, and keep a handle to the eventual result
+      const guarded = p.then(v => v).catch(() => ({ kind:'earlyError', value:'network' }));
 
-      try {
-        return await Promise.race([p, timeout]);
-      } catch (e) {
-        console.error('early fetch crashed:', e);
-        return { kind: 'earlyError', value: 'network' };
+      const first = await Promise.race([
+        guarded,
+        new Promise(resolve =>
+          setTimeout(() => resolve({ kind: 'earlyError', value: 'network_timeout' }), timeoutMs)
+        )
+      ]);
+
+      // If we timed out, keep listening and update UI when real result arrives
+      if (first.kind === 'earlyError' && first.value === 'network_timeout') {
+        guarded.then(late => {
+          if (!late) return;
+          if (late.kind === 'data') handleApiPayload(late.value);
+          else if (late.value) showStatus(late.value);
+        });
       }
+      return first;
     }
 
     // Show grid after early fetch (never hangs)
@@ -408,22 +435,14 @@
 
       try {
         if (res.kind === 'data') {
-          const data = res.value;
-          if (data.ok && data.status === 'ok' && data.mode === 'draw') {
-            isWinner   = !!data.isWinner;
-            winnerCode = data.code;
-            setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
-            apiReady = true;
-            // canvases are sized after showing the grid
-          } else if (data.status) {
-            showStatus(data.status);
-            apiReady = true;
-          } else {
-            console.error('API error payload:', data);
-            showStatus('default'); apiReady = true;
-          }
+          handleApiPayload(res.value);
         } else {
-          showStatus(res.value || 'default');
+          // Softer message while we may still be waiting
+          if (res.value === 'network_timeout') {
+            setPrizeText("⏳ Still contacting the server… keep this page open.");
+          } else {
+            showStatus(res.value || 'default');
+          }
         }
       } catch (err) {
         console.error('init handler failed:', err);
@@ -433,6 +452,7 @@
         loader.style.display = "none";
         grid.style.display   = "flex";
         expiryNote.style.display = "block";
+
         // Now that wrapper is visible and has a real width, size canvases
         sizeScratchCanvases();
 
@@ -447,4 +467,3 @@
   </script>
 </body>
 </html>
-
