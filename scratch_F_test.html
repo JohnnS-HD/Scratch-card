@@ -50,7 +50,7 @@
     .scratch-wrapper {
       position: relative;
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
       height: 100px;
       margin: 20px auto 0;
       border: 2px dashed #444;
@@ -194,7 +194,7 @@
 
 <body>
   <a href="https://www.hypedrop.com/" target="_blank" rel="noopener">
-    <img src="Logo-Full-White.png" alt="Logo" class="logo" width="360"/>
+    <img src="Logo-Full-White.png" alt="Logo" class="logo" width="380"/>
   </a>
 
   <!-- Loader while fetching -->
@@ -208,8 +208,8 @@
       <h2>Scratch here and get your prize</h2>
 
       <div class="scratch-wrapper" id="scratchWrapper">
-        <canvas id="prizeCanvas" width="360" height="100" aria-hidden="true"></canvas>
-        <canvas id="scratchCanvas" width="360" height="100"></canvas>
+        <canvas id="prizeCanvas" width="380" height="100" aria-hidden="true"></canvas>
+        <canvas id="scratchCanvas" width="380" height="100"></canvas>
         <div class="confetti" id="confetti"></div>
       </div>
 
@@ -374,7 +374,7 @@
 
     // ✅ Make canvases match the wrapper’s width (fixes mobile overflow)
     function sizeScratchCanvases() {
-      const w = Math.round(wrapper.clientWidth || 360);
+      const w = Math.round(wrapper.clientWidth || 380);
       const h = 100;
       [prizeCanvas, scratchCanvas].forEach(c => {
         c.width = w;  c.height = h;
@@ -467,3 +467,4 @@
   </script>
 </body>
 </html>
+
