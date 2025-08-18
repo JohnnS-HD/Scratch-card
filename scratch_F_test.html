@@ -390,7 +390,7 @@
       if (data && data.ok && data.status === 'ok' && data.mode === 'draw') {
         isWinner   = !!data.isWinner;
         winnerCode = data.code;
-        setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+        setPrizeText(isWinner ? `You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
         apiReady = true;
         if (userScratched && isWinner) celebrate();
       } else if (data && data.status) {
@@ -467,4 +467,5 @@
   </script>
 </body>
 </html>
+
 
