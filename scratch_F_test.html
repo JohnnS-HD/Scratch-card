@@ -46,10 +46,12 @@
 
     h2 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.2px; }
 
+    /* ✅ Responsive width on phone, same look on desktop */
     .scratch-wrapper {
       position: relative;
-      width: 360px;
-      height: 100px;
+      width: 100%;
+      max-width: 360px;          /* keep your desktop size */
+      height: 100px;             /* keep your original height */
       margin: 20px auto 0;
       border: 2px dashed #444;
       background-color: var(--card);
@@ -108,32 +110,31 @@
     .socials { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
     .socials img { width:60px !important; height:auto !important; object-fit:contain; display:block; }
 
-/* Force two items side-by-side */
-.fresh-drops{
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  align-items: center;
-  justify-items: center;
-  margin-top: 10px;
-}
-.fresh-drops a{ display:block; }
-.fresh-drops img{
-  width: 100%;
-  max-width: 200px;   /* tweak size as you like */
-  height: auto;
-  border-radius: 10px;
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-.fresh-drops img:hover{
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(0,0,0,.3);
-}
+    /* Fresh drops side-by-side */
+    .fresh-drops{
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      align-items: center;
+      justify-items: center;
+      margin-top: 10px;
+    }
+    .fresh-drops a{ display:block; }
+    .fresh-drops img{
+      width: 100%;
+      max-width: 200px;   /* tweak size as you like */
+      height: auto;
+      border-radius: 10px;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .fresh-drops img:hover{
+      transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0,0,0,.3);
+    }
 
-/* On very narrow screens, stack them */
-@media (max-width: 420px){
-  .fresh-drops{ grid-template-columns: 1fr; }
-}
+    @media (max-width: 420px){
+      .fresh-drops{ grid-template-columns: 1fr; }
+    }
 
     /* confetti */
     .confetti { position:absolute; inset:0; pointer-events:none; z-index:3; }
@@ -227,7 +228,6 @@
         <em>Stay tuned, more prizes will be available soon!</em>
       </div>
 
-      <!-- NEW: Fresh drops images under Possible Prizes -->
       <div class="info-title" style="margin-top:16px;">🔥 Fresh drops for you!</div>
       <div class="fresh-drops">
         <a href="https://www.hypedrop.com/boxes/view/na/duck-duck-goose" target="_blank" rel="noopener">
@@ -238,7 +238,6 @@
         </a>
       </div>
 
-      <!-- Socials still under the right card -->
       <div class="socials-wrap" style="margin-top: 20px;">
         <div class="socials">
           <a href="https://discord.gg/yGrM3eCsqD" target="_blank" rel="noopener"><img src="discord-icon-43736.png" alt="Discord"></a>
@@ -263,7 +262,7 @@
     const grid          = document.getElementById("grid");
     const loader        = document.getElementById("loader");
 
-    // Helpers
+    // Draw helper
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
       ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
@@ -273,7 +272,7 @@
       ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
     }
 
-    // --- Keep the last prize message so we can redraw when needed ---
+    // Remember last message (so we can redraw after resize/orientation)
     let currentPrizeText = "";
     let currentPrizeBold = false;
     function setPrizeText(text, bold=false) {
@@ -282,33 +281,7 @@
       drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
     }
     function redrawPrizeText() {
-      if (currentPrizeText) {
-        drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
-      }
-    }
-    window.addEventListener('orientationchange', () => setTimeout(redrawPrizeText, 50), { passive: true });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(redrawPrizeText, 0); });
-    window.addEventListener('pageshow', () => setTimeout(redrawPrizeText, 0));
-
-    function fireConfetti() {
-      confettiEl.innerHTML = "";
-      const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
-      for (let i=0;i<70;i++){
-        const s = document.createElement("span");
-        s.style.left = Math.random()*100 + "%";
-        s.style.top  = "-10px";
-        s.style.background = colors[Math.floor(Math.random()*colors.length)];
-        s.style.animationDelay = (Math.random()*0.25) + "s";
-        confettiEl.appendChild(s);
-      }
-      setTimeout(()=>confettiEl.innerHTML="",1300);
-    }
-    function celebrate() {
-      wrapper.classList.remove("win-glow");
-      void wrapper.offsetWidth;
-      wrapper.classList.add("win-glow");
-      fireConfetti();
-      copyRow.style.display = "block";
+      if (currentPrizeText) drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
     }
 
     // Scratch
@@ -348,6 +321,27 @@
       });
     });
 
+    function fireConfetti() {
+      confettiEl.innerHTML = "";
+      const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
+      for (let i=0;i<70;i++){
+        const s = document.createElement("span");
+        s.style.left = Math.random()*100 + "%";
+        s.style.top  = "-10px";
+        s.style.background = colors[Math.floor(Math.random()*colors.length)];
+        s.style.animationDelay = (Math.random()*0.25) + "s";
+        confettiEl.appendChild(s);
+      }
+      setTimeout(()=>confettiEl.innerHTML="",1300);
+    }
+    function celebrate() {
+      wrapper.classList.remove("win-glow");
+      void wrapper.offsetWidth;
+      wrapper.classList.add("win-glow");
+      fireConfetti();
+      copyRow.style.display = "block";
+    }
+
     function showStatus(kind){
       const map = {
         token_used:    "⚠️ This link was already used.",
@@ -361,6 +355,22 @@
         default:       "⚠️ Error fetching code."
       };
       setPrizeText(map[kind] || map.default, false);
+    }
+
+    // ✅ Make canvases match the wrapper’s width (fixes mobile overflow)
+    function sizeScratchCanvases() {
+      // wrapper is responsive: width up to 360px, height fixed at 100px
+      const w = Math.round(wrapper.clientWidth || 360);
+      const h = 100; // keep your original height
+      // set both the internal bitmap and CSS size so drawing & pointer coords match
+      [prizeCanvas, scratchCanvas].forEach(c => {
+        c.width = w;  c.height = h;
+        c.style.width = w + 'px';
+        c.style.height = h + 'px';
+      });
+      // repaint cover and redraw message
+      enableScratchCover();
+      redrawPrizeText();
     }
 
     // --- Safe getter with timeout so UI never hangs ---
@@ -380,8 +390,6 @@
         return { kind: 'earlyError', value: 'network' };
       }
     }
-    window.addEventListener('error', e => console.error('JS error:', e.error || e.message));
-    window.addEventListener('unhandledrejection', e => console.error('Unhandled promise:', e.reason));
 
     // Show grid after early fetch (never hangs)
     (async function init(){
@@ -395,11 +403,9 @@
             winnerCode = data.code;
             setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
             apiReady = true;
-            enableScratchCover();
-            if (userScratched && isWinner) celebrate();
+            // canvases are sized after showing the grid
           } else if (data.status) {
             showStatus(data.status);
-            enableScratchCover();
             apiReady = true;
           } else {
             console.error('API error payload:', data);
@@ -415,8 +421,16 @@
         // ALWAYS reveal UI
         loader.style.display = "none";
         grid.style.display   = "flex";
-        // ensure text paints after becoming visible (mobile)
-        setTimeout(redrawPrizeText, 0);
+
+        // Now that wrapper is visible and has a real width, size canvases
+        sizeScratchCanvases();
+
+        // Re-size on rotations/resizes (mobile safe)
+        window.addEventListener('resize', sizeScratchCanvases, { passive:true });
+        window.addEventListener('orientationchange', () => setTimeout(sizeScratchCanvases, 0), { passive:true });
+
+        // If user scratches instantly, ensure cover is in place
+        if (userScratched && isWinner) celebrate();
       }
     })();
   </script>
