@@ -173,7 +173,7 @@
           const data = ct.includes('application/json') ? await res.json()
                                                        : { ok:false, error: await res.text() };
           return { kind: 'data', value: data };
-        } catch {
+        } catch (e) {
           return { kind: 'earlyError', value: 'network' };
         }
       })();
@@ -228,16 +228,15 @@
       </div>
 
       <!-- NEW: Fresh drops images under Possible Prizes -->
-      <!-- NEW: Fresh drops images under Possible Prizes -->
-    <div class="info-title" style="margin-top:16px;">🔥 Fresh drops for you!</div>
-    <div class="fresh-drops">
-      <a href="https://www.hypedrop.com/boxes/view/na/duck-duck-goose" target="_blank" rel="noopener">
-        <img src="HypeDrop_duck-duck-goose.avif" alt="Duck Duck Goose">
-      </a>
-      <a href="https://www.hypedrop.com/boxes/view/na/poker-dreams" target="_blank" rel="noopener">
-        <img src="HypeDrop_poker-dreams.png" alt="Poker Dreams">
-      </a>
-    </div>
+      <div class="info-title" style="margin-top:16px;">🔥 Fresh drops for you!</div>
+      <div class="fresh-drops">
+        <a href="https://www.hypedrop.com/boxes/view/na/duck-duck-goose" target="_blank" rel="noopener">
+          <img src="HypeDrop_duck-duck-goose.avif" alt="Duck Duck Goose">
+        </a>
+        <a href="https://www.hypedrop.com/boxes/view/na/poker-dreams" target="_blank" rel="noopener">
+          <img src="HypeDrop_poker-dreams.png" alt="Poker Dreams">
+        </a>
+      </div>
 
       <!-- Socials still under the right card -->
       <div class="socials-wrap" style="margin-top: 20px;">
@@ -273,6 +272,24 @@
       ctx.textBaseline = "middle";
       ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
     }
+
+    // --- Keep the last prize message so we can redraw when needed ---
+    let currentPrizeText = "";
+    let currentPrizeBold = false;
+    function setPrizeText(text, bold=false) {
+      currentPrizeText = text || "";
+      currentPrizeBold = !!bold;
+      drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
+    }
+    function redrawPrizeText() {
+      if (currentPrizeText) {
+        drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
+      }
+    }
+    window.addEventListener('orientationchange', () => setTimeout(redrawPrizeText, 50), { passive: true });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(redrawPrizeText, 0); });
+    window.addEventListener('pageshow', () => setTimeout(redrawPrizeText, 0));
+
     function fireConfetti() {
       confettiEl.innerHTML = "";
       const colors = ["#ffd76b", "#7a86ff", "#ff8ba7", "#7fffd4", "#ffffff"];
@@ -340,69 +357,67 @@
         empty:         "⚠️ No codes available.",
         unauthorized:  "⚠️ Unauthorized request.",
         network:       "⚠️ Network error.",
+        network_timeout:"⚠️ Network timeout.",
         default:       "⚠️ Error fetching code."
       };
       setPrizeText(map[kind] || map.default, false);
-      // --- Keep the last prize message so we can redraw after mobile events ---
-let currentPrizeText = "";
-let currentPrizeBold = false;
-
-function setPrizeText(text, bold=false) {
-  currentPrizeText = text || "";
-  currentPrizeBold = !!bold;
-  drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
-}
-
-function redrawPrizeText() {
-  if (currentPrizeText) {
-    drawCenteredText(prizeCtx, currentPrizeText, currentPrizeBold);
-  }
-}
-
-// Redraw after common mobile events
-window.addEventListener('orientationchange', () => {
-  // give layout a tick to settle
-  setTimeout(redrawPrizeText, 50);
-}, { passive: true });
-
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) setTimeout(redrawPrizeText, 0);
-});
-
-window.addEventListener('pageshow', () => setTimeout(redrawPrizeText, 0));
-
     }
 
-    // Show grid after early fetch
-    (async function init(){
-      const res = await (window.__scratchEarlyFetch || Promise.resolve({kind:'earlyError', value:'default'}));
+    // --- Safe getter with timeout so UI never hangs ---
+    async function getEarlyData(timeoutMs = 8000) {
+      const p = (window.__scratchEarlyFetch instanceof Promise)
+        ? window.__scratchEarlyFetch
+        : Promise.resolve({ kind: 'earlyError', value: 'default' });
 
-      if (res.kind === 'data') {
-        const data = res.value;
-        if (data.ok && data.status === 'ok' && data.mode === 'draw') {
-          isWinner   = !!data.isWinner;
-          winnerCode = data.code;
-          setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
-          apiReady = true;
-          enableScratchCover();
-          if (userScratched && isWinner) celebrate();
-        } else if (data.status) {
-          showStatus(data.status);
-          enableScratchCover();
-          apiReady = true;
-        } else {
-          console.error('API error:', data);
-          showStatus('default'); apiReady = true;
-        }
-      } else {
-        showStatus(res.value || 'default');
+      const timeout = new Promise(resolve =>
+        setTimeout(() => resolve({ kind: 'earlyError', value: 'network_timeout' }), timeoutMs)
+      );
+
+      try {
+        return await Promise.race([p, timeout]);
+      } catch (e) {
+        console.error('early fetch crashed:', e);
+        return { kind: 'earlyError', value: 'network' };
       }
+    }
+    window.addEventListener('error', e => console.error('JS error:', e.error || e.message));
+    window.addEventListener('unhandledrejection', e => console.error('Unhandled promise:', e.reason));
 
-      // swap loader → 2-card grid
-      loader.style.display = "none";
-      grid.style.display   = "flex";
-      // ensure the text is painted after grid becomes visible (mobile)
-      setTimeout(redrawPrizeText, 0);
+    // Show grid after early fetch (never hangs)
+    (async function init(){
+      const res = await getEarlyData();
+
+      try {
+        if (res.kind === 'data') {
+          const data = res.value;
+          if (data.ok && data.status === 'ok' && data.mode === 'draw') {
+            isWinner   = !!data.isWinner;
+            winnerCode = data.code;
+            setPrizeText(isWinner ? `🎉 You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+            apiReady = true;
+            enableScratchCover();
+            if (userScratched && isWinner) celebrate();
+          } else if (data.status) {
+            showStatus(data.status);
+            enableScratchCover();
+            apiReady = true;
+          } else {
+            console.error('API error payload:', data);
+            showStatus('default'); apiReady = true;
+          }
+        } else {
+          showStatus(res.value || 'default');
+        }
+      } catch (err) {
+        console.error('init handler failed:', err);
+        showStatus('default');
+      } finally {
+        // ALWAYS reveal UI
+        loader.style.display = "none";
+        grid.style.display   = "flex";
+        // ensure text paints after becoming visible (mobile)
+        setTimeout(redrawPrizeText, 0);
+      }
     })();
   </script>
 </body>
