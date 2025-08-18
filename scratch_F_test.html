@@ -151,6 +151,15 @@
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .fine-print{
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  max-width: 980px;   /* aligns with the two-card grid width */
+  margin: 8px auto 0; /* centered under the grid */
+  line-height: 1.4;
+}
   </style>
 
   <!-- Early Fetch (runs before body renders) -->
@@ -248,9 +257,12 @@
     </aside>
 
   </div>
-
+<p id="expiryNote" class="fine-print" style="display:none;" aria-live="polite">
+  This link is valid for one opening only. If you close this page, it will expire.
+</p>
   <script>
     // DOM
+    const expiryNote = document.getElementById("expiryNote");
     const wrapper       = document.getElementById("scratchWrapper");
     const prizeCanvas   = document.getElementById("prizeCanvas");
     const prizeCtx      = prizeCanvas.getContext("2d");
@@ -261,7 +273,6 @@
     const copyBtn       = document.getElementById("copyBtn");
     const grid          = document.getElementById("grid");
     const loader        = document.getElementById("loader");
-
     // Draw helper
     function drawCenteredText(ctx, text, bold=false) {
       ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
@@ -421,7 +432,7 @@
         // ALWAYS reveal UI
         loader.style.display = "none";
         grid.style.display   = "flex";
-
+        expiryNote.style.display = "block";
         // Now that wrapper is visible and has a real width, size canvases
         sizeScratchCanvases();
 
@@ -436,3 +447,4 @@
   </script>
 </body>
 </html>
+
