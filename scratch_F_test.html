@@ -282,13 +282,30 @@
 
     // Draw helper
     function drawCenteredText(ctx, text, bold=false) {
-      ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-      ctx.font = `${bold ? '700' : '400'} 18px Arial, sans-serif`;
-      ctx.fillStyle = "#fff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, ctx.canvas.width/2, ctx.canvas.height/2);
-    }
+  const lines = String(text).split('\n');
+  const pad = 12;
+  let size = 18, min = 12;
+
+  // Fit to the longest line
+  const longest = lines.reduce((a,b) => (a.length > b.length ? a : b), '');
+  while (size >= min) {
+    ctx.font = `${bold ? '700' : '400'} ${size}px Arial, sans-serif`;
+    if (ctx.measureText(longest).width <= ctx.canvas.width - pad*2) break;
+    size -= 1;
+  }
+
+  ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const lineHeight = Math.round(size * 1.2);
+  const startY = (ctx.canvas.height / 2) - ((lines.length - 1) * lineHeight) / 2;
+
+  lines.forEach((ln, i) => {
+    ctx.fillText(ln, ctx.canvas.width / 2, startY + i * lineHeight);
+  });
+}
 
     // Remember last message
     let currentPrizeText = "";
@@ -393,7 +410,7 @@
       if (data && data.ok && data.status === 'ok' && data.mode === 'draw') {
         isWinner   = !!data.isWinner;
         winnerCode = data.code;
-        setPrizeText(isWinner ? `You WON! Code: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
+        setPrizeText(isWinner ? `🎉You WON!\nCode: ${winnerCode}` : "🙁 Better luck next time!", isWinner);
         apiReady = true;
         if (userScratched && isWinner) celebrate();
       } else if (data && data.status) {
@@ -470,3 +487,4 @@
   </script>
 </body>
 </html>
+
